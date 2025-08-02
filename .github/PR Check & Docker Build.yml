@@ -5,6 +5,10 @@ on:
     branches:
       - develop
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   lint-and-build:
     runs-on: ubuntu-latest
@@ -23,7 +27,7 @@ jobs:
       - name: Run ESLint with ReviewDog
         uses: reviewdog/action-eslint@v1
         with:
-          github_token: ${{ secrets.MY_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-check
           eslint_flags: ". --ext .js,.jsx,.ts,.tsx"
 
@@ -40,7 +44,6 @@ jobs:
   build-docker:
     needs: lint-and-build
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -56,4 +59,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: yourdockerhubusername/ups-dashboard:latest
+          tags: ups-dashboard/ups-dashboard:latest
