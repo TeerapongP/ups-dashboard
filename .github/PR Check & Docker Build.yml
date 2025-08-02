@@ -60,4 +60,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ups-dashboard/ups-dashboard:latest
+          tags: teerapongp/ups-dashboard:latest
