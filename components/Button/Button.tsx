@@ -1,8 +1,8 @@
 import React from 'react'
 
-const Button = () => {
+const Button = (props: { label: any }) => {
     return (
-        <button>Button</button>
+        <button>{props.label}</button>
     )
 }
 
