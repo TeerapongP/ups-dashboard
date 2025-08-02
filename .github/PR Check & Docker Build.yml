@@ -2,9 +2,9 @@ name: PR Code Check & Docker Build
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, main]
   pull_request:
-    branches: [develop]
+    branches: [develop, main]
 
 permissions:
   contents: write
