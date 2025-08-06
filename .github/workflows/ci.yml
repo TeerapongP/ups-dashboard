@@ -29,7 +29,7 @@ jobs:
         with:
           version: 10.11.0
 
-      - name: Install dependencies (no frozen lockfile)
+      - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
       - name: Run ESLint
@@ -52,14 +52,24 @@ jobs:
         with:
           version: 10.11.0
 
-      - name: Check pnpm-lock.yaml exists
-        run: ls -la pnpm-lock.yaml
-
-      - name: Install dependencies (frozen lockfile)
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build Next.js app
         run: pnpm build
+
+      - name: Prune devDependencies
+        run: pnpm prune --prod
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            .next
+            public
+            node_modules
+            package.json
 
   docker:
     runs-on: ubuntu-latest
@@ -68,16 +78,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build & Push Docker Image
+      - name: Build & Push Docker Image (Optimized)
         uses: docker/build-push-action@v5
         with:
           context: .
+          dockerfile: ./Dockerfile.prod
           push: true
           tags: thirapongp/ups-dashboard:latest
 
