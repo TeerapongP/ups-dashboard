@@ -1,41 +1,43 @@
-# --- Dependencies Stage ---
 FROM node:20-alpine AS deps
 
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
-
-# เปิดใช้ corepack แล้วติดตั้ง pnpm ล่าสุด
 RUN corepack enable && corepack prepare pnpm@latest --activate
-
 RUN pnpm install --frozen-lockfile
 
-# --- Builder Stage ---
 FROM node:20-alpine AS builder
 
 WORKDIR /app
-
-# เปิดใช้ corepack แล้วติดตั้ง pnpm ล่าสุด
 RUN corepack enable && corepack prepare pnpm@latest --activate
-
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Set Next.js to produce a standalone build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
 RUN pnpm run build
 
-# ตัด devDependencies ออก
-RUN pnpm prune --prod
+FROM node:20-alpine AS runner
 
-# --- Production Stage ---
-FROM gcr.io/distroless/nodejs20-debian12 AS runner
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
 WORKDIR /app
 
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/.next ./.next
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Copy only the standalone build and static files
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
 
 EXPOSE 3000
 
-# ใช้ node เรียกไฟล์ next start แบบถูกต้อง (distroless ไม่มี shell)
-CMD ["node", "./node_modules/next/dist/bin/next", "start"]
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["node", "server.js"]
