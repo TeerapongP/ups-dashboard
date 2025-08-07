@@ -15,7 +15,6 @@ export default function ForgotPasswordForm() {
     const handleForgotPassword = async () => {
         setIsLoading(true)
         try {
-            // ตัวอย่าง: เรียก API ส่งลิงก์รีเซ็ต (ปรับตาม API จริง)
             const res = await fetch("/api/auth/forgot-password", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -23,8 +22,6 @@ export default function ForgotPasswordForm() {
             })
             if (!res.ok) throw new Error("Failed to send reset link")
             router.push("/auth/login")
-            // alert("ส่งลิงก์รีเซ็ตรหัสผ่านสำเร็จ กรุณาตรวจสอบอีเมลของคุณ")
-            // setCurrentView('login')
         } catch (error) {
             alert("เกิดข้อผิดพลาดในการส่งลิงก์รีเซ็ต")
         } finally {

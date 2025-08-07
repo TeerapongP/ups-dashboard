@@ -29,7 +29,6 @@ export default function ForgotPassword() {
         setIsLoading(true);
         setMessage('');
 
-        // Simulate API call
         setTimeout(() => {
             if (formData.username && formData.password) {
                 setMessage('เข้าสู่ระบบสำเร็จ! กำลังเปลี่ยนเส้นทางไปยัง Dashboard...');
@@ -45,7 +44,6 @@ export default function ForgotPassword() {
         setIsLoading(true);
         setMessage('');
 
-        // Simulate API call
         setTimeout(() => {
             if (formData.username) {
                 setMessage('ลิงก์รีเซ็ตรหัสผ่านได้ถูกส่งไปยังอีเมลของคุณแล้ว');
@@ -60,7 +58,6 @@ export default function ForgotPassword() {
             <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%239C92AC\" fill-opacity=\"0.05\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')" }}></div>
 
             <div className="w-full max-w-md relative">
-                {/* Logo and Title */}
                 <div className="text-center mb-8">
                     <div className="flex justify-center items-center mb-4">
                         <div className="bg-blue-600 p-3 rounded-xl shadow-lg">
@@ -71,7 +68,6 @@ export default function ForgotPassword() {
                     <p className="text-slate-300">ระบบตรวจสอบสถานะ UPS แบบเรียลไทม์</p>
                 </div>
 
-                {/* Main Card */}
                 <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20">
                     <>
                         <div className="mb-6">
@@ -164,14 +160,6 @@ export default function ForgotPassword() {
                             </button>
                         </div>
                     </>
-                    {/* {message && (
-                        <div className={`mt-4 p-3 rounded-lg text-sm ${message.includes('สำเร็จ') || message.includes('ส่งไปยัง')
-                            ? 'bg-green-100 text-green-700 border border-green-200'
-                            : 'bg-red-100 text-red-700 border border-red-200'
-                            }`}>
-                            {message}
-                        </div>
-                    )} */}
                 </div>
 
 
