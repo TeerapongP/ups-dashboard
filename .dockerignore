@@ -1,9 +1,39 @@
-.git
+# Ignore node_modules ที่ติดตั้งในเครื่องเรา (จะติดตั้งใหม่ใน container)
 node_modules
-Dockerfile
-README.md
-tests
+
+# Next.js cache ไฟล์ที่ไม่จำเป็นต้องเอาไป
+.next/cache
+
+# lockfile จะใช้แค่ pnpm-lock.yaml ดังนั้นถ้าใช้ yarn หรือ npm อาจต้องแก้
+# (ถ้าใช้ pnpm แล้วไม่ต้อง ignore pnpm-lock.yaml)
+# pnpm-lock.yaml
+
+# ไฟล์ config และ environment ที่เป็นความลับ
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git folder
+.git
+
+# IDE หรือ editor config
 .vscode
-.next/cache
+.idea
+
+# Logs, temp files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Tests folders or files ถ้าไม่ต้องการเอาไปใน production
+tests
+__tests__
+
+# Dockerfile ตัวเองไม่ต้องเอาไปใน image
+Dockerfile
+
+# README หรือเอกสารอื่น ๆ ไม่ต้องเอาไป
+README.md
