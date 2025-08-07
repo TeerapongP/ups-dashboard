@@ -8,11 +8,15 @@ export function withAuth(options?: NextAuthMiddlewareOptions) {
         req: NextRequest
     ): Promise<NextMiddlewareResult> {
         return await handleMiddleware(req, options, async (token) => {
+            if (token) {
+            }
+
             req.nextUrl.searchParams.set("authed", "true")
             return NextResponse.next()
         })
     }
 }
+
 
 export default async function handleMiddleware(
     req: NextRequest,

@@ -14,7 +14,6 @@ export default function ForgotPassword() {
         rememberMe: false
     });
     const [isLoading, setIsLoading] = useState(false);
-    const [message, setMessage] = useState('');
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
@@ -27,31 +26,31 @@ export default function ForgotPassword() {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        setMessage('');
+        // setMessage('');
 
-        setTimeout(() => {
-            if (formData.username && formData.password) {
-                setMessage('เข้าสู่ระบบสำเร็จ! กำลังเปลี่ยนเส้นทางไปยัง Dashboard...');
-            } else {
-                setMessage('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
-            }
-            setIsLoading(false);
-        }, 1500);
+        // setTimeout(() => {
+        //     if (formData.username && formData.password) {
+        //         setMessage('เข้าสู่ระบบสำเร็จ! กำลังเปลี่ยนเส้นทางไปยัง Dashboard...');
+        //     } else {
+        //         setMessage('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน');
+        //     }
+        //     setIsLoading(false);
+        // }, 1500);
     };
 
     const handleForgotPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        setMessage('');
+        // setMessage('');
 
-        setTimeout(() => {
-            if (formData.username) {
-                setMessage('ลิงก์รีเซ็ตรหัสผ่านได้ถูกส่งไปยังอีเมลของคุณแล้ว');
-            } else {
-                setMessage('กรุณากรอกอีเมลที่ถูกต้อง');
-            }
-            setIsLoading(false);
-        }, 1500);
+        // setTimeout(() => {
+        //     if (formData.username) {
+        //         setMessage('ลิงก์รีเซ็ตรหัสผ่านได้ถูกส่งไปยังอีเมลของคุณแล้ว');
+        //     } else {
+        //         setMessage('กรุณากรอกอีเมลที่ถูกต้อง');
+        //     }
+        //     setIsLoading(false);
+        // }, 1500);
     };
     return <div>
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">
