@@ -2,9 +2,9 @@
 FROM node:20-alpine AS deps
 
 WORKDIR /app
+
 COPY package.json pnpm-lock.yaml ./
 
-# Install pnpm globally (เบาๆ ไม่ติด dev tools)
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 RUN pnpm install --frozen-lockfile
@@ -14,7 +14,6 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Enable pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -36,4 +35,4 @@ COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3000
 
-CMD ["./node_modules/.bin/next", "start"]
+CMD ["node", "./node_modules/next/dist/bin/next", "start"]
