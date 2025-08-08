@@ -7,7 +7,6 @@ export default async function middleware(req: NextRequest) {
         secret: process.env.NEXTAUTH_SECRET,
         callbacks: {
             authorized: ({ token }) => {
-                console.log("Authorized token in middleware:", token);
                 return !!token;
             },
         },

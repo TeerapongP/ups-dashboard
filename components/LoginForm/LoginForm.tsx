@@ -45,10 +45,6 @@ export default function ForgotPassword() {
 
             if (!res.ok) throw new Error("Login failed");
 
-            const data = await res.json();
-
-            localStorage.setItem("access_token", data.access_token);
-
             setToastType('success');
             setToastMessage('เข้าสู่ระบบสำเร็จ!');
             setShowToast(true);

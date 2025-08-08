@@ -1,60 +1,44 @@
-import { NextMiddlewareResult } from "next/dist/server/web/types";
 import { NextRequest, NextResponse } from "next/server";
-import { NextAuthMiddlewareOptions } from "next-auth/middleware";
-import { JWT, getToken } from "next-auth/jwt";
+import * as jose from "jose";
+import { NextMiddlewareResult } from "next/dist/server/web/types";
 
 export default async function handleMiddleware(
     req: NextRequest,
-    options: NextAuthMiddlewareOptions | undefined,
-    onSuccess?: (token: JWT | null) => Promise<NextMiddlewareResult>
+    options: any,
+    onSuccess?: (token: any) => Promise<NextMiddlewareResult>
 ) {
     const signInPage = "/auth/login";
     const errorPage = "/auth/error";
 
     const secret = options?.secret ?? process.env.NEXTAUTH_SECRET;
     if (!secret) {
-        console.error(
-            `[next-auth][error][NO_SECRET]`,
-            `\nhttps://next-auth.js.org/errors#no_secret`
-        );
-
-        const errorUrl = new URL(errorPage, req.nextUrl.origin);
+        const errorUrl = new URL(errorPage, req.url);
         errorUrl.searchParams.append("error", "Configuration");
-
         return NextResponse.redirect(errorUrl);
     }
 
-    let token: JWT | null = null;
-    const authHeader = req.headers.get("authorization");
-    console.log("Auth header in middleware:", authHeader);
+    let token = null;
+    const rawToken = req.cookies.get("access_token")?.value;
 
-    // Check for Bearer token in Authorization header
-    // or retrieve token from cookies
-
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-        const rawToken = authHeader.substring(7);
-        token = { token: rawToken } as JWT;
-    } else {
-        token = await getToken({
-            req,
-            secret,
-            cookieName: "access_token",
-        });
+    if (rawToken) {
+        try {
+            const { payload } = await jose.jwtVerify(
+                rawToken,
+                new TextEncoder().encode(secret)
+            );
+            token = payload;
+            console.log("Verified token:", token);
+        } catch (err) {
+            console.error("JWT verify error:", err);
+        }
     }
 
-    console.log("Middleware token:", token);
-
-    const isAuthorized =
-        (await options?.callbacks?.authorized?.({
-            req,
-            token,
-        })) ?? !!token;
-
-    if (isAuthorized) {
+    if (token) {
         return onSuccess ? await onSuccess(token) : NextResponse.next();
     }
 
-    const signInUrl = new URL(signInPage, req.nextUrl.origin);
+    console.log("Unauthorized access, redirecting to sign-in page");
+    const signInUrl = new URL(signInPage, req.url);
     signInUrl.searchParams.append(
         "callbackUrl",
         `${req.nextUrl.pathname}${req.nextUrl.search}`
