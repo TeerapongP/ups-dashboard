@@ -3,13 +3,14 @@
 import BatteryDonutChart from '@/components/BatteryDonutChartComponent/BatteryDonutChart';
 import DataTable from '@/components/DataTableComponent/DataTable';
 import LoadBarChart from '@/components/LoadBarChartComponent/LoadBarChart';
-import SummaryCards from '@/components/SummaryCardsComponent/SummaryCards';
 import VoltageLineChart from '@/components/VoltageLineChartComponent/VoltageLineChart';
 import Toast from '@/components/ToastComponent/Toast';
 import NavBar from '@/components/NavBarComponent/NavBar';
 import Loading from '@/components/LoadingComponent/Loading';
 import { UPSData } from '@/types/ups';
 import { useState, useEffect } from 'react';
+import GroupedSummaryCards from '@/components/GroupedSummaryCardsGroupComponent/GroupedSummaryCardsGroup';
+import SearchFilter from '@/components/SearchFilterComponent/SearchFilter';
 
 export default function UPSDashboard() {
   const [upsData, setUpsData] = useState<UPSData[]>([]);
@@ -17,6 +18,8 @@ export default function UPSDashboard() {
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<'success' | 'error' | 'warning'>('success');
   const [toastMessage, setToastMessage] = useState('');
+  const [filteredData, setFilteredData] = useState<UPSData[]>([]);
+  const [groupBy, setGroupBy] = useState<string>('none');
 
 
   useEffect(() => {
@@ -33,13 +36,17 @@ export default function UPSDashboard() {
         setLoading(false);
       }
     };
-
+    
     fetchData();
-
+    
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
 
+  const handleFilter = (filtered: UPSData[], groupByValue: string) => {
+    setFilteredData(filtered);
+    setGroupBy(groupByValue);
+  };
 
 
   if (loading) {
@@ -51,7 +58,9 @@ export default function UPSDashboard() {
   return (
     <div className="min-h-screen bg-gray-100">
       <NavBar />
-      <SummaryCards upsData={upsData} />
+      <SearchFilter upsData={upsData} onFilter={handleFilter} />
+
+      <GroupedSummaryCards upsData={filteredData} groupBy={groupBy} />
 
       <div className="px-6 pb-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
