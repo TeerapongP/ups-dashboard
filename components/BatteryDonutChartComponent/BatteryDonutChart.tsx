@@ -19,9 +19,6 @@ export default function BatteryDonutChart({ upsData }: BatteryDonutChartProps) {
 
   const COLORS = ['#22c55e', '#f3f4f6'];
 
-  const renderLabel = () => {
-    return `${avgBattery}%`;
-  };
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6">

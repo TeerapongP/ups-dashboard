@@ -7,7 +7,7 @@ import SummaryCards from '@/components/SummaryCardsComponent/SummaryCards';
 import VoltageLineChart from '@/components/VoltageLineChartComponent/VoltageLineChart';
 import Toast from '@/components/ToastComponent/Toast';
 import NavBar from '@/components/NavBarComponent/NavBar';
-import Loading from '@/components/LoadingComponent/loading';
+import Loading from '@/components/LoadingComponent/Loading';
 import { UPSData } from '@/types/ups';
 import { useState, useEffect } from 'react';
 
@@ -27,6 +27,7 @@ export default function UPSDashboard() {
         setUpsData(data);
       } catch (error) {
         setToastMessage('เกิดข้อผิดพลาดในการดึงข้อมูล');
+        setToastType('error');
         setShowToast(true);
       } finally {
         setLoading(false);

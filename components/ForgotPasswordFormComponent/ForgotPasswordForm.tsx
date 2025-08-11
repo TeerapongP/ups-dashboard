@@ -25,6 +25,7 @@ export default function ForgotPasswordForm() {
             if (!res.ok) throw new Error("Failed to send reset link")
             router.push("/auth/login")
         } catch (error) {
+            console.log(error)
             alert("เกิดข้อผิดพลาดในการส่งลิงก์รีเซ็ต")
         } finally {
             setIsLoading(false)

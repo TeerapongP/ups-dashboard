@@ -1,11 +1,7 @@
 import { useRouter } from "next/navigation";
 import React from "react";
-import Cookies from 'js-cookie';
 
 export default function NavBar() {
-    const router = useRouter();
-
-
     return (
         <header className="sticky top-0 z-10 bg-white shadow-md">
             <div className="max-w-full px-6 py-4">
