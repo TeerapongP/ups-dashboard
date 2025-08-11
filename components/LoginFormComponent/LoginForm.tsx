@@ -1,8 +1,10 @@
 "use client"
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, EyeOff, Zap, Shield, Activity } from 'lucide-react';
 import { useRouter } from "next/navigation";
-import Toast from '@/components/Toast/Toast';
+import Toast from '@/components/ToastComponent/Toast';
+import Cookies from 'js-cookie';
+import CryptoJS from 'crypto-js';
 
 export default function ForgotPassword() {
     const router = useRouter()
@@ -18,14 +20,19 @@ export default function ForgotPassword() {
         rememberMe: false
     });
     const [isLoading, setIsLoading] = useState(false);
+    const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY;
+
+    useEffect(() => {
+        loadUsernamePassword();
+      }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
+          ...prev,
+          [name]: type === 'checkbox' ? checked : value,
         }));
-    };
+      };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,11 +52,12 @@ export default function ForgotPassword() {
 
             if (!res.ok) throw new Error("Login failed");
 
+            saveUsernamePassword();
             setToastType('success');
             setToastMessage('เข้าสู่ระบบสำเร็จ!');
             setShowToast(true);
-
             router.push("/");
+           
         } catch (error) {
             console.error("Login error:", error);
             setToastType('error');
@@ -59,6 +67,37 @@ export default function ForgotPassword() {
             setIsLoading(false);
         }
     };
+
+    const saveUsernamePassword = () => {
+        if (formData.rememberMe) {
+          const encryptedUsername = CryptoJS.AES.encrypt(formData.username, secretKey!).toString();
+          const encryptedPassword = CryptoJS.AES.encrypt(formData.password, secretKey!).toString();
+      
+          Cookies.set('username', encryptedUsername, { expires: 7 });
+          Cookies.set('password', encryptedPassword, { expires: 7 });
+        } else {
+          Cookies.remove('username');
+          Cookies.remove('password');
+        }
+      };
+    
+      const loadUsernamePassword = () => {
+        const encryptedUsername = Cookies.get('username');
+        const encryptedPassword = Cookies.get('password');
+      
+        if (encryptedUsername && encryptedPassword) {
+          const username = CryptoJS.AES.decrypt(encryptedUsername, secretKey!).toString(CryptoJS.enc.Utf8);
+          const password = CryptoJS.AES.decrypt(encryptedPassword, secretKey!).toString(CryptoJS.enc.Utf8);
+      
+          setFormData(prev => ({
+            ...prev,
+            username,
+            password,
+            rememberMe: true
+          }));
+        }
+      };
+    
 
     return <div>
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">

@@ -10,7 +10,7 @@ export default async function handleMiddleware(
     const signInPage = "/auth/login";
     const errorPage = "/auth/error";
 
-    const secret = options?.secret ?? process.env.NEXTAUTH_SECRET;
+    const secret = options?.secret ?? process.env.NEXT_PUBLIC_SECRET_KEY;
     if (!secret) {
         const errorUrl = new URL(errorPage, req.url);
         errorUrl.searchParams.append("error", "Configuration");
