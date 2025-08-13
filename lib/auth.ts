@@ -1,63 +1,50 @@
-import { NextMiddlewareResult } from "next/dist/server/web/types";
 import { NextRequest, NextResponse } from "next/server";
-import { NextAuthMiddlewareOptions } from "next-auth/middleware";
-import { JWT, getToken } from "next-auth/jwt";
+import * as jose from "jose";
+import { NextMiddlewareResult } from "next/dist/server/web/types";
+import { MiddlewareOptions } from "@/types/middlewareOptions";
+
+type JwtPayload = Record<string, unknown>;
 
 export default async function handleMiddleware(
-    req: NextRequest,
-    options: NextAuthMiddlewareOptions | undefined,
-    onSuccess?: (token: JWT | null) => Promise<NextMiddlewareResult>
-) {
-    const signInPage = "/auth/login";
-    const errorPage = "/auth/error";
+  req: NextRequest,
+  options: MiddlewareOptions,
+  onSuccess?: (token: JwtPayload) => Promise<NextMiddlewareResult>
+): Promise<NextMiddlewareResult> {
+  const signInPage = "/auth/login";
+  const errorPage = "/auth/error";
 
-    const secret = options?.secret ?? process.env.NEXTAUTH_SECRET;
-    if (!secret) {
-        console.error(
-            `[next-auth][error][NO_SECRET]`,
-            `\nhttps://next-auth.js.org/errors#no_secret`
-        );
+  const secret = options?.secret ?? process.env.NEXT_PUBLIC_SECRET_KEY;
+  if (!secret) {
+    const errorUrl = new URL(errorPage, req.url);
+    errorUrl.searchParams.append("error", "Configuration");
+    return NextResponse.redirect(errorUrl);
+  }
 
-        const errorUrl = new URL(errorPage, req.nextUrl.origin);
-        errorUrl.searchParams.append("error", "Configuration");
+  let token: JwtPayload | null = null;
+  const rawToken = req.cookies.get("access_token")?.value;
 
-        return NextResponse.redirect(errorUrl);
+  if (rawToken) {
+    try {
+      const { payload } = await jose.jwtVerify(
+        rawToken,
+        new TextEncoder().encode(secret)
+      );
+      token = payload;
+      console.log("Verified token:", token);
+    } catch (err) {
+      console.error("JWT verify error:", err);
     }
+  }
 
-    let token: JWT | null = null;
-    const authHeader = req.headers.get("authorization");
-    console.log("Auth header in middleware:", authHeader);
+  if (token) {
+    return onSuccess ? await onSuccess(token) : NextResponse.next();
+  }
 
-    // Check for Bearer token in Authorization header
-    // or retrieve token from cookies
-
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-        const rawToken = authHeader.substring(7);
-        token = { token: rawToken } as JWT;
-    } else {
-        token = await getToken({
-            req,
-            secret,
-            cookieName: "access_token",
-        });
-    }
-
-    console.log("Middleware token:", token);
-
-    const isAuthorized =
-        (await options?.callbacks?.authorized?.({
-            req,
-            token,
-        })) ?? !!token;
-
-    if (isAuthorized) {
-        return onSuccess ? await onSuccess(token) : NextResponse.next();
-    }
-
-    const signInUrl = new URL(signInPage, req.nextUrl.origin);
-    signInUrl.searchParams.append(
-        "callbackUrl",
-        `${req.nextUrl.pathname}${req.nextUrl.search}`
-    );
-    return NextResponse.redirect(signInUrl);
+  console.log("Unauthorized access, redirecting to sign-in page");
+  const signInUrl = new URL(signInPage, req.url);
+  signInUrl.searchParams.append(
+    "callbackUrl",
+    `${req.nextUrl.pathname}${req.nextUrl.search}`
+  );
+  return NextResponse.redirect(signInUrl);
 }

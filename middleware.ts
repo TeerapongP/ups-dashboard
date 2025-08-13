@@ -4,10 +4,9 @@ import { NextRequest } from "next/server";
 
 export default async function middleware(req: NextRequest) {
     const options: NextAuthMiddlewareOptions = {
-        secret: process.env.NEXTAUTH_SECRET,
+        secret: process.env.NEXT_PUBLIC_SECRET_KEY,
         callbacks: {
             authorized: ({ token }) => {
-                console.log("Authorized token in middleware:", token);
                 return !!token;
             },
         },

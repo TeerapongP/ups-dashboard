@@ -1,39 +1,39 @@
 import { ToastProps } from '@/types/toast';
 import React, { useEffect, useState } from 'react';
+import { useCallback } from 'react';
 
 const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
     const [visible, setVisible] = useState(true);
     const [isExiting, setIsExiting] = useState(false);
     const [progress, setProgress] = useState(100);
 
+    const handleRemove = useCallback(() => {
+        setIsExiting(true);
+        setTimeout(() => {
+            setVisible(false);
+            onRemove(toast.id);
+        }, 400);
+    }, [onRemove, toast.id]);
+    
     useEffect(() => {
         if (toast.duration) {
-            // Progress bar animation
             const progressInterval = setInterval(() => {
                 setProgress(prev => {
                     const newProgress = prev - (100 / ((toast.duration ?? 0) / 50));
                     return newProgress > 0 ? newProgress : 0;
                 });
             }, 50);
-
+    
             const timer = setTimeout(() => {
                 handleRemove();
             }, toast.duration);
-
+    
             return () => {
                 clearTimeout(timer);
                 clearInterval(progressInterval);
             };
         }
-    }, [toast.duration, onRemove, toast.id]);
-
-    const handleRemove = () => {
-        setIsExiting(true);
-        setTimeout(() => {
-            setVisible(false);
-            onRemove(toast.id);
-        }, 400);
-    };
+    }, [toast.duration, onRemove, toast.id, handleRemove]);
 
     if (!visible) return null;
 
