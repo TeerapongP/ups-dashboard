@@ -74,7 +74,7 @@ export default function GroupedSummaryCards({ upsData, groupBy }: GroupedSummary
     const avgTemp = Math.round(
       groupData.reduce((sum, ups) => sum + (ups.temperatureC ?? 0), 0) / total
     );
-    const totalLoad = groupData.reduce((sum, ups) => sum + ups.loadVA, 0);
+    const totalLoad = groupData.reduce((sum, ups) => sum + (ups.loadVA ?? 0), 0);
 
     return { total, online, offline, avgBattery, avgTemp, totalLoad };
   };
@@ -93,22 +93,21 @@ export default function GroupedSummaryCards({ upsData, groupBy }: GroupedSummary
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-bold text-gray-800">{ups.id}</h3>
               <span
-                className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                  ups.status === 'Online'
+                className={`px-3 py-1 rounded-full text-sm font-semibold ${ups.status === 'Online'
                     ? 'bg-green-100 text-green-800'
                     : 'bg-red-100 text-red-800'
-                }`}
+                  }`}
               >
                 {ups.status}
               </span>
             </div>
-            
+
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-gray-600">IP Address</p>
                 <p className="font-semibold text-gray-800">{ups.ip}</p>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-sm text-gray-600">Brand</p>
@@ -119,18 +118,18 @@ export default function GroupedSummaryCards({ upsData, groupBy }: GroupedSummary
                   <p className="font-semibold text-gray-800 text-xs">{ups.model}</p>
                 </div>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-600">Location</p>
                 <p className="font-semibold text-gray-800">{ups.location}</p>
               </div>
-              
+
               <div className="pt-3 border-t border-gray-200">
                 <div className="flex justify-between items-center mb-2">
                   <p className="text-sm text-gray-600">Battery</p>
                   <p className="text-3xl font-bold text-blue-600">{ups.batteryPercent ?? 0}%</p>
                 </div>
-                
+
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-gray-600">Temperature</p>
                   <p className="text-lg font-semibold text-orange-600">{ups.temperatureC ?? 0}°C</p>
@@ -148,7 +147,7 @@ export default function GroupedSummaryCards({ upsData, groupBy }: GroupedSummary
       {groupNames.map((groupName) => {
         const groupUpsData = grouped[groupName];
         const stats = getGroupStats(groupUpsData);
-        
+
         return (
           <div key={groupName} className="bg-gray-50 rounded-xl p-6">
             {/* Group Header */}
@@ -160,7 +159,7 @@ export default function GroupedSummaryCards({ upsData, groupBy }: GroupedSummary
                   <p className="text-sm text-gray-600">{stats.total} UPS units</p>
                 </div>
               </div>
-              
+
               {/* Group Statistics */}
               <div className="hidden md:flex items-center space-x-6 text-sm">
                 <div className="text-center">
@@ -216,23 +215,22 @@ export default function GroupedSummaryCards({ upsData, groupBy }: GroupedSummary
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="text-lg font-bold text-gray-800">{ups.id}</h3>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        ups.status === 'Online'
+                      className={`px-2 py-1 rounded-full text-xs font-semibold ${ups.status === 'Online'
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
-                      }`}
+                        }`}
                     >
                       {ups.status}
                     </span>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div>
                       <p className="text-xs text-gray-600">IP: {ups.ip}</p>
                       <p className="text-xs text-gray-600">{ups.brand} - {ups.model}</p>
                       <p className="text-xs text-gray-600">📍 {ups.location}</p>
                     </div>
-                    
+
                     <div className="pt-2 border-t border-gray-200">
                       <div className="flex justify-between items-center">
                         <div className="text-center">
