@@ -1,6 +1,7 @@
 'use client';
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, TooltipProps } from 'recharts';
+import { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent';
 import { UPSData } from '@/types/ups';
 
 interface VoltageLineChartProps {
@@ -15,7 +16,15 @@ export default function VoltageLineChart({ upsData }: VoltageLineChartProps) {
   }));
 
   // Custom tooltip component
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: {
+    active?: boolean;
+    payload?: Array<{
+      value: number;
+      name: string;
+      color: string;
+    }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white/95 backdrop-blur-sm border-0 rounded-lg shadow-2xl p-4 min-w-[140px]">
@@ -49,22 +58,22 @@ export default function VoltageLineChart({ upsData }: VoltageLineChartProps) {
       {/* Chart container with improved styling */}
       <div className="relative">
         <ResponsiveContainer width="100%" height={350}>
-          <LineChart 
-            data={chartData} 
+          <LineChart
+            data={chartData}
             margin={{ top: 20, right: 40, left: 20, bottom: 60 }}
           >
             {/* Enhanced grid */}
-            <CartesianGrid 
-              strokeDasharray="2 4" 
-              stroke="#e5e7eb" 
+            <CartesianGrid
+              strokeDasharray="2 4"
+              stroke="#e5e7eb"
               strokeOpacity={0.6}
               horizontal={true}
               vertical={false}
             />
-            
+
             {/* Styled X-axis */}
-            <XAxis 
-              dataKey="name" 
+            <XAxis
+              dataKey="name"
               stroke="#6b7280"
               fontSize={11}
               fontWeight={500}
@@ -75,9 +84,9 @@ export default function VoltageLineChart({ upsData }: VoltageLineChartProps) {
               axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
               tickLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
             />
-            
+
             {/* Styled Y-axis */}
-            <YAxis 
+            <YAxis
               stroke="#6b7280"
               fontSize={11}
               fontWeight={500}
@@ -85,40 +94,40 @@ export default function VoltageLineChart({ upsData }: VoltageLineChartProps) {
               tick={{ fill: '#6b7280' }}
               axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
               tickLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
-              label={{ 
-                value: 'Voltage (V)', 
-                angle: -90, 
+              label={{
+                value: 'Voltage (V)',
+                angle: -90,
                 position: 'insideLeft',
                 style: { textAnchor: 'middle', fill: '#6b7280', fontSize: '12px', fontWeight: 500 }
               }}
             />
-            
+
             {/* Custom tooltip */}
             <Tooltip content={<CustomTooltip />} />
-            
+
             {/* Styled legend */}
-            <Legend 
+            <Legend
               wrapperStyle={{
                 paddingTop: '20px',
                 fontSize: '13px',
                 fontWeight: 500
               }}
             />
-            
+
             {/* Enhanced line with gradient and glow effect */}
-            <Line 
-              type="monotone" 
-              dataKey="L1" 
+            <Line
+              type="monotone"
+              dataKey="L1"
               stroke="url(#lineGradient)"
               strokeWidth={3}
-              dot={{ 
-                fill: '#ef4444', 
+              dot={{
+                fill: '#ef4444',
                 strokeWidth: 3,
                 stroke: '#ffffff',
                 r: 5,
                 filter: 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.4))'
               }}
-              activeDot={{ 
+              activeDot={{
                 r: 7,
                 fill: '#ef4444',
                 stroke: '#ffffff',
@@ -128,7 +137,7 @@ export default function VoltageLineChart({ upsData }: VoltageLineChartProps) {
               name="L1 Voltage"
               connectNulls={false}
             />
-            
+
             {/* Gradient definition */}
             <defs>
               <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
