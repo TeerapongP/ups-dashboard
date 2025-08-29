@@ -9,7 +9,7 @@ interface BatteryDonutChartProps {
 
 export default function BatteryDonutChart({ upsData }: BatteryDonutChartProps) {
   const avgBattery = Math.round(
-    upsData.reduce((sum, ups) => sum + ups.batteryPercent, 0) / upsData.length
+    upsData.reduce((sum, ups) => sum + (ups.batteryPercent ?? 0), 0) / upsData.length
   );
 
   const data = [
