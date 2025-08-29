@@ -21,27 +21,44 @@ export default function UPSDashboard() {
   const [filteredData, setFilteredData] = useState<UPSData[]>([]);
   const [groupBy, setGroupBy] = useState<string>('none');
 
-
   useEffect(() => {
+    const controller = new AbortController();
+  
     const fetchData = async () => {
       try {
-        const response = await fetch('/data/ups.json');
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL_DEV}/ups?timeout=1&retries=0&workers=12&ttl=2`,
+          {
+            method: "GET",
+            credentials: "include",   
+            signal: controller.signal,   
+          }
+        );
+  
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+  
         const data = await response.json();
-        setUpsData(data);
-      } catch (error) {
-        setToastMessage('เกิดข้อผิดพลาดในการดึงข้อมูล');
-        setToastType('error');
+        setUpsData(data.items || []);
+      } catch {
+        setToastMessage("เกิดข้อผิดพลาดในการดึงข้อมูล");
+        setToastType("error");
         setShowToast(true);
       } finally {
         setLoading(false);
       }
     };
-    
+  
     fetchData();
-    
     const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
+  
+    return () => {
+      clearInterval(interval);
+      controller.abort();
+    };
   }, []);
+  
 
   const handleFilter = (filtered: UPSData[], groupByValue: string) => {
     setFilteredData(filtered);
@@ -51,7 +68,7 @@ export default function UPSDashboard() {
 
   if (loading) {
     return (
-      <Loading/>
+      <Loading />
     );
   }
 
