@@ -41,8 +41,7 @@ export default function UPSDashboard() {
   
         const data = await response.json();
         setUpsData(data.items || []);
-      } catch (error: any) {
-        if (error.name === "AbortError") return;
+      } catch (error) {
         setToastMessage("เกิดข้อผิดพลาดในการดึงข้อมูล");
         setToastType("error");
         setShowToast(true);
