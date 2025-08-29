@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { NextMiddlewareResult } from "next/dist/server/web/types";
 import * as jose from "jose";
-import { NextMiddlewareResult } from "next/dist/server/web/types";
 import { MiddlewareOptions } from "@/types/middlewareOptions";
 
-type JwtPayload = Record<string, unknown>;
+// ใช้ JWTPayload ของ jose (type-safe)
+type JwtPayload = jose.JWTPayload & Record<string, unknown>;
 
 export default async function handleMiddleware(
   req: NextRequest,
@@ -13,26 +14,53 @@ export default async function handleMiddleware(
   const signInPage = "/auth/login";
   const errorPage = "/auth/error";
 
-  const secret = options?.secret ?? process.env.NEXT_PUBLIC_SECRET_KEY;
+  // อย่าใช้ NEXT_PUBLIC_* สำหรับ secret ฝั่ง server
+  const secret = options?.secret ?? process.env.JWT_SECRET;
   if (!secret) {
     const errorUrl = new URL(errorPage, req.url);
-    errorUrl.searchParams.append("error", "Configuration");
+    errorUrl.searchParams.set("error", "Configuration");
     return NextResponse.redirect(errorUrl);
   }
 
-  let token: JwtPayload | null = null;
   const rawToken = req.cookies.get("access_token")?.value;
+  let token: JwtPayload | null = null;
 
   if (rawToken) {
     try {
+      // กัน clock skew 5 วินาที
       const { payload } = await jose.jwtVerify(
         rawToken,
-        new TextEncoder().encode(secret)
+        new TextEncoder().encode(secret),
+        { clockTolerance: 5 }
       );
-      token = payload;
-      console.log("Verified token:", token);
-    } catch (err) {
-      console.error("JWT verify error:", err);
+      token = payload as JwtPayload;
+      // (ถ้าจะ log ให้เหลือเฉพาะตอน dev)
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Verified token sub:", token.sub);
+      }
+    } catch (err: unknown) {
+      if (err instanceof jose.errors.JWTExpired) {
+        // token หมดอายุ
+        const signInUrl = new URL(signInPage, req.url);
+        signInUrl.searchParams.set(
+          "callbackUrl",
+          `${req.nextUrl.pathname}${req.nextUrl.search}`
+        );
+        signInUrl.searchParams.set("error", "SessionExpired");
+        return NextResponse.redirect(signInUrl);
+      }
+      if (err instanceof jose.errors.JOSEError) {
+        
+        // โครงสร้าง/ลายเซ็น/secret ผิด ฯลฯ
+        if (process.env.NODE_ENV !== "production") {
+          console.error("JWT verification failed:", err.message);
+        }
+      } else {
+        // error อื่น ๆ
+        if (process.env.NODE_ENV !== "production") {
+          console.error("Unexpected JWT error:", err);
+        }
+      }
     }
   }
 
@@ -40,9 +68,9 @@ export default async function handleMiddleware(
     return onSuccess ? await onSuccess(token) : NextResponse.next();
   }
 
-  console.log("Unauthorized access, redirecting to sign-in page");
+  // ไม่มี token หรือ verify ไม่ผ่าน → ไปหน้า login
   const signInUrl = new URL(signInPage, req.url);
-  signInUrl.searchParams.append(
+  signInUrl.searchParams.set(
     "callbackUrl",
     `${req.nextUrl.pathname}${req.nextUrl.search}`
   );

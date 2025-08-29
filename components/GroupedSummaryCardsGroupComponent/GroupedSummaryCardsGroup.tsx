@@ -26,9 +26,10 @@ export default function GroupedSummaryCards({ upsData, groupBy }: GroupedSummary
           groupValue = ups.location;
           break;
         case 'batteryLevel':
-          if (ups.batteryPercent >= 80) groupValue = 'High (80-100%)';
-          else if (ups.batteryPercent >= 50) groupValue = 'Medium (50-79%)';
-          else if (ups.batteryPercent >= 20) groupValue = 'Low (20-49%)';
+          const batteryLevel = ups.batteryPercent ?? 0;
+          if (batteryLevel >= 80) groupValue = 'High (80-100%)';
+          else if (batteryLevel >= 50) groupValue = 'Medium (50-79%)';
+          else if (batteryLevel >= 20) groupValue = 'Low (20-49%)';
           else groupValue = 'Critical (<20%)';
           break;
         default:
@@ -68,10 +69,10 @@ export default function GroupedSummaryCards({ upsData, groupBy }: GroupedSummary
     const online = groupData.filter(ups => ups.status === 'Online').length;
     const offline = total - online;
     const avgBattery = Math.round(
-      groupData.reduce((sum, ups) => sum + ups.batteryPercent, 0) / total
+      groupData.reduce((sum, ups) => sum + (ups.batteryPercent ?? 0), 0) / total
     );
     const avgTemp = Math.round(
-      groupData.reduce((sum, ups) => sum + ups.temperatureC, 0) / total
+      groupData.reduce((sum, ups) => sum + (ups.temperatureC ?? 0), 0) / total
     );
     const totalLoad = groupData.reduce((sum, ups) => sum + ups.loadVA, 0);
 
@@ -127,12 +128,12 @@ export default function GroupedSummaryCards({ upsData, groupBy }: GroupedSummary
               <div className="pt-3 border-t border-gray-200">
                 <div className="flex justify-between items-center mb-2">
                   <p className="text-sm text-gray-600">Battery</p>
-                  <p className="text-3xl font-bold text-blue-600">{ups.batteryPercent}%</p>
+                  <p className="text-3xl font-bold text-blue-600">{ups.batteryPercent ?? 0}%</p>
                 </div>
                 
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-gray-600">Temperature</p>
-                  <p className="text-lg font-semibold text-orange-600">{ups.temperatureC}°C</p>
+                  <p className="text-lg font-semibold text-orange-600">{ups.temperatureC ?? 0}°C</p>
                 </div>
               </div>
             </div>
@@ -235,11 +236,11 @@ export default function GroupedSummaryCards({ upsData, groupBy }: GroupedSummary
                     <div className="pt-2 border-t border-gray-200">
                       <div className="flex justify-between items-center">
                         <div className="text-center">
-                          <p className="text-lg font-bold text-blue-600">{ups.batteryPercent}%</p>
+                          <p className="text-lg font-bold text-blue-600">{ups.batteryPercent ?? 0}%</p>
                           <p className="text-xs text-gray-600">Battery</p>
                         </div>
                         <div className="text-center">
-                          <p className="text-lg font-bold text-orange-600">{ups.temperatureC}°C</p>
+                          <p className="text-lg font-bold text-orange-600">{ups.temperatureC ?? 0}°C</p>
                           <p className="text-xs text-gray-600">Temp</p>
                         </div>
                       </div>
