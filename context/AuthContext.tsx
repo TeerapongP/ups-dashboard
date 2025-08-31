@@ -1,11 +1,11 @@
 // context/AuthContext.tsx
 "use client";
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 
 type AuthState = { user: any | null; loggedIn: boolean };
 type AuthCtxType = AuthState & {
-  setAuth: (user: any | null) => void;   // 👈 อัปเดตทันที
-  refresh: () => Promise<void>;          // 👈 รีเฟรชจากเซิร์ฟเวอร์
+  setAuth: (user: any | null) => void;   // 👈 ตั้งค่าเองได้
+  refresh: () => Promise<void>;          // 👈 ให้กด refresh manual ได้
 };
 
 const AuthCtx = createContext<AuthCtxType>({
@@ -24,21 +24,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const r = await fetch("/api/auth/me", { credentials: "include", cache: "no-store" });
-      const data = r.ok ? await r.json() : null;
+      const r = await fetch("/api/auth/me", { credentials: "include" });
+      if (!r.ok) {
+        setState({ user: null, loggedIn: false });
+        return;
+      }
+      const data = await r.json();
       setState({ user: data?.user ?? null, loggedIn: !!data?.user });
     } catch {
       setState({ user: null, loggedIn: false });
     }
   }, []);
-
-  useEffect(() => {
-    refresh();
-    // อัปเดตเมื่อโฟกัสกลับหน้า (ช่วยให้ทันใจหลัง redirect)
-    const onFocus = () => refresh();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [refresh]);
 
   return (
     <AuthCtx.Provider value={{ ...state, setAuth, refresh }}>

@@ -104,7 +104,7 @@ export default function Login() {
       });
       if (!res.ok) throw new Error("Login failed");
   
-      let user: any = null;
+      let user = null;
       try {
         const json = await res.json();
         user = json?.user ?? null;
@@ -116,7 +116,7 @@ export default function Login() {
       setToastType("success");
       setToastMessage("เข้าสู่ระบบสำเร็จ!");
       setShowToast(true);
-  
+      
       router.replace("/");
   
       await refresh(); 
