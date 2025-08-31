@@ -1,11 +1,11 @@
 // context/AuthContext.tsx
 "use client";
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useEffect } from "react";
 
 type AuthState = { user: any | null; loggedIn: boolean };
 type AuthCtxType = AuthState & {
-  setAuth: (user: any | null) => void;   // 👈 ตั้งค่าเองได้
-  refresh: () => Promise<void>;          // 👈 ให้กด refresh manual ได้
+  setAuth: (user: any | null) => void;   
+  refresh: () => Promise<void>;          
 };
 
 const AuthCtx = createContext<AuthCtxType>({
@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const r = await fetch("/api/auth/me", { credentials: "include" });
+      const r = await fetch("/api/auth/me", { credentials: "include", cache: "no-store" });
       if (!r.ok) {
         setState({ user: null, loggedIn: false });
         return;
@@ -35,6 +35,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState({ user: null, loggedIn: false });
     }
   }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   return (
     <AuthCtx.Provider value={{ ...state, setAuth, refresh }}>

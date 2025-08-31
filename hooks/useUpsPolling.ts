@@ -9,13 +9,9 @@ interface UseUpsPollingReturn {
   error: string | null;
 }
 
-/**
- * โพลข้อมูล UPS ทันทีและต่อเนื่อง โดยไม่เช็คสถานะ login
- */
+
 export const useUpsPolling = (
-  requestUrl: string,
-  intervalMs: number = 30000
-): UseUpsPollingReturn => {
+requestUrl: string, intervalMs: number = 30000): UseUpsPollingReturn => {
   const [upsData, setUpsData] = useState<UPSData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

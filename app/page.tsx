@@ -2,7 +2,7 @@
 
 import BatteryDonutChart from '@/components/BatteryDonutChartComponent/BatteryDonutChart';
 import DataTable from '@/components/DataTableComponent/DataTable';
-import LoadBarChart from '@/components/LoadBarChartComponent/LoadBarChart';
+import LoadBarChart from '@/components/TemperatureLineChart/TemperatureLineChart';
 import VoltageLineChart from '@/components/VoltageLineChartComponent/VoltageLineChart';
 import Toast from '@/components/ToastComponent/Toast';
 import NavBar from '@/components/NavBarComponent/NavBar';
@@ -23,17 +23,14 @@ export default function UPSDashboard() {
 
   const { loggedIn } = useAuth();
   
-  // ประกอบ request URL จาก env (หรือจะ hardcode "/api/ups?..." ก็ได้)
   const requestUrl = useMemo(() => {
-    const base = process.env.NEXT_PUBLIC_API_URL_DEV ?? '';
+    const base = process.env.NEXT_PUBLIC_API_URL ?? '';
     const qs = 'timeout=1&retries=0&workers=12&ttl=2';
-    // ถ้า base มีค่า → ใช้ `${base}/ups?...` , ถ้าไม่มีใช้ '/api/ups?...'
     return `${base ? `${base}/ups` : '/api/ups'}?${qs}`;
   }, []);
 
-  const { upsData, loading, error } = useUpsPolling(loggedIn, requestUrl, 30000);
+  const { upsData, loading, error } = useUpsPolling( requestUrl, 30000);
 
-  // อัปเดต filter ครั้งแรก/เมื่อ upsData เปลี่ยน
   useEffect(() => {
     if (upsData?.length) {
       setFilteredData(upsData);
