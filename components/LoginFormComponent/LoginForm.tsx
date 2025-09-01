@@ -1,104 +1,136 @@
-"use client"
-import { useEffect, useState } from 'react';
-import { Eye, EyeOff, Zap, Shield, Activity } from 'lucide-react';
+"use client";
+import { useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import CryptoJS from "crypto-js";
 import { useRouter } from "next/navigation";
-import Toast from '@/components/ToastComponent/Toast';
-import Cookies from 'js-cookie';
-import CryptoJS from 'crypto-js';
+import { Zap, EyeOff, Eye, Shield, Activity } from "lucide-react";
+import Toast from "../ToastComponent/Toast";
+import { useAuth } from "@/context/AuthContext";
 
-export default function ForgotPassword() {
-    const router = useRouter()
-    const [showPassword, setShowPassword] = useState(false);
-    const [showToast, setShowToast] = useState(false);
-    const [toastType, setToastType] = useState<'success' | 'error' | 'warning'>('success');
-    const [toastMessage, setToastMessage] = useState('');
-    const [formData, setFormData] = useState({
-        username: '',
-        password: '',
-        newPassword: '',
-        confirmPassword: '',
-        rememberMe: false
-    });
-    const [isLoading, setIsLoading] = useState(false);
-    const secretKey = process.env.NEXT_PUBLIC_SECRET_KEY;
+const USER_COOKIE = "username";
+const PASS_COOKIE = "password";
 
-    useEffect(() => {
-        const encryptedUsername = Cookies.get('username');
-        const encryptedPassword = Cookies.get('password');
+const SECRET = process.env.NEXT_PUBLIC_SECRET_KEY ?? "";
 
-        if (encryptedUsername && encryptedPassword) {
-            const username = CryptoJS.AES.decrypt(encryptedUsername, secretKey!).toString(CryptoJS.enc.Utf8);
-            const password = CryptoJS.AES.decrypt(encryptedPassword, secretKey!).toString(CryptoJS.enc.Utf8);
+function assertSecret() {
+  if (!SECRET) throw new Error("Missing NEXT_PUBLIC_SECRET_KEY (ต้อง rebuild หลังแก้ .env)");
+}
 
-            setFormData(prev => ({
-                ...prev,
-                username,
-                password,
-                rememberMe: true,
-            }));
-        }
-    }, [secretKey]);
+function encrypt(text: string) {
+  assertSecret();
+  return CryptoJS.AES.encrypt(text ?? "", SECRET).toString();
+}
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value,
-        }));
-    };
+function decrypt(cipher: string) {
+  assertSecret();
+  const bytes = CryptoJS.AES.decrypt(cipher, SECRET);
+  const plain = bytes.toString(CryptoJS.enc.Utf8);
+  if (!plain) throw new Error("Bad decrypt"); 
+  return plain;
+}
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
+export default function Login() {
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastType, setToastType] = useState<'success' | 'error' | 'warning'>('success');
+  const [toastMessage, setToastMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { setAuth, refresh } = useAuth();
 
-        try {
-            const formBody = new URLSearchParams();
-            formBody.append("username", formData.username);
-            formBody.append("password", formData.password);
+  const [formData, setFormData] = useState({
+    username: '',
+    password: '',
+    newPassword: '',
+    confirmPassword: '',
+    rememberMe: false,
+  });
 
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL_DEV}/auth/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: formBody.toString(),
-                credentials: 'include',
-            });
+  useEffect(() => {
+    try {
+      if (!SECRET) return; 
+      const encU = Cookies.get(USER_COOKIE);
+      const encP = Cookies.get(PASS_COOKIE);
+      if (!encU || !encP) return;
 
-            if (!res.ok) throw new Error("Login failed");
+      const username = decrypt(encU);
+      const password = decrypt(encP);
 
-            saveUsernamePassword();
-            setToastType('success');
-            setToastMessage('เข้าสู่ระบบสำเร็จ!');
-            setShowToast(true);
-            router.push("/");
+      setFormData(prev => ({
+        ...prev, username, password, rememberMe: true,
+      }));
+    } catch (e) {
+      Cookies.remove(USER_COOKIE);
+      Cookies.remove(PASS_COOKIE);
+      console.warn("Invalid remember-me cookies cleared:", e);
+    }
+  }, []);
 
-        } catch (error) {
-            console.error("Login error:", error);
-            setToastType('error');
-            setToastMessage("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
-            setShowToast(true);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
 
-    const saveUsernamePassword = () => {
-        if (formData.rememberMe) {
-            const encryptedUsername = CryptoJS.AES.encrypt(formData.username, secretKey!).toString();
-            const encryptedPassword = CryptoJS.AES.encrypt(formData.password, secretKey!).toString();
+  const saveUsernamePassword = () => {
+    if (formData.rememberMe) {
+      try {
+        const encU = encrypt(formData.username);
+        const encP = encrypt(formData.password);
+        Cookies.set(USER_COOKIE, encU, { expires: 7, sameSite: "lax", path: "/" });
+        Cookies.set(PASS_COOKIE, encP, { expires: 7, sameSite: "lax", path: "/" });
+      } catch (e) {
+        console.error("encrypt/save cookie failed:", e);
+      }
+    } else {
+      Cookies.remove(USER_COOKIE);
+      Cookies.remove(PASS_COOKIE);
+    }
+  };
 
-            Cookies.set('username', encryptedUsername, { expires: 7 });
-            Cookies.set('password', encryptedPassword, { expires: 7 });
-        } else {
-            Cookies.remove('username');
-            Cookies.remove('password');
-        }
-    };
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      const body = new URLSearchParams();
+      body.append("username", formData.username);
+      body.append("password", formData.password);
+  
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Login failed");
+  
+      let user = null;
+      try {
+        const json = await res.json();
+        user = json?.user ?? null;
+      } catch {
+       
+      }
+      setAuth(user ?? { username: formData.username });
+      saveUsernamePassword();
+      setToastType("success");
+      setToastMessage("เข้าสู่ระบบสำเร็จ!");
+      setShowToast(true);
+      
+      router.replace("/");
+  
+      await refresh(); 
+    } catch (err) {
+      console.error("Login error:", err);
+      setToastType("error");
+      setToastMessage("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+      setShowToast(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-
-
-
-
-    return <div>
+  return <div>
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center p-4">
             <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%239C92AC\" fill-opacity=\"0.05\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')" }}></div>
 
