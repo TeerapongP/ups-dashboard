@@ -81,26 +81,30 @@ export default function TemperatureLineChart({ upsData }: Props) {
   // ให้กราฟเลื่อนได้แนวนอนบนมือถือ
   const minWidth = Math.max(chartData.length * 60 + 120, 640);
 
-  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+  const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
     if (active && payload?.length) {
-      const p0 = payload[0];
-      const t = Number(p0?.value ?? 0);
-      const deviceId = (p0 as any)?.payload?.id ?? String(label);
+      // 👇 cast type ให้รวม payload: ChartPoint
+      const p0 = payload[0] as typeof payload[0] & { payload: ChartPoint };
+      const t = Number(p0.value ?? 0);
+
+      const deviceIp = p0.payload.id
 
       const level =
-        t <= 20 ? 'Cool' :
-          t <= 30 ? 'Normal' :
-            t <= 40 ? 'Warm' :
-              t <= 50 ? 'Hot' : 'Critical';
+        t <= 20 ? "Cool" :
+          t <= 30 ? "Normal" :
+            t <= 40 ? "Warm" :
+              t <= 50 ? "Hot" : "Critical";
+
       const levelColor = tempColor(t);
 
       return (
         <div
           className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-100 p-3 min-w-[160px]"
-          style={{ WebkitBackdropFilter: 'blur(6px)' }}
+          style={{ WebkitBackdropFilter: "blur(6px)" }}
         >
-          {/* ใช้ ID ที่ type-safe แล้ว */}
-          <div className="text-xs font-semibold text-gray-800 mb-2">{deviceId}</div>
+          <div className="text-xs font-semibold text-gray-800 mb-2">
+            IP: {deviceIp}
+          </div>
           <div className="flex items-center gap-2 text-sm">
             <span
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-white"

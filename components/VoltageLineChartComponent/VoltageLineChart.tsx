@@ -128,7 +128,7 @@ export default function VoltageLineChart({ upsData }: VoltageLineChartProps) {
                 textAnchor={isSmall ? 'middle' : 'end'}
                 height={xHeight}
                 tick={{ fill: '#6b7280' }}
-                interval={xInterval as any} // interval typing accepts number | 'preserveStartEnd'
+                interval={xInterval}
                 axisLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                 tickLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
                 tickFormatter={xTickFormatter}
