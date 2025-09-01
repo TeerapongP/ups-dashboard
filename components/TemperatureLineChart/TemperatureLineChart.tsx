@@ -1,13 +1,13 @@
 'use client';
 
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine
+  LineChart, Line, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer
 } from 'recharts';
-import type { TooltipProps } from 'recharts';
 import { useMemo } from 'react';
 import type { UPSData } from '@/types/ups';
 import { CustomTooltipProps } from '@/types/TooltipProps';
+import { ChartPoint } from '@/types/chartPoint';
 
 type Props = { upsData: UPSData[] };
 
@@ -68,9 +68,10 @@ const ActiveColorDot = ({ cx = 0, cy = 0, value = 0 }: DotProps) => {
 };
 
 export default function TemperatureLineChart({ upsData }: Props) {
-  const chartData = useMemo(
+  const chartData: ChartPoint[] = useMemo(
     () =>
       (upsData || []).map((ups) => ({
+        id: ups.id,
         name: ups.location || ups.id,
         temp: typeof ups.temperatureC === 'number' ? ups.temperatureC : 0,
       })),
@@ -82,8 +83,10 @@ export default function TemperatureLineChart({ upsData }: Props) {
 
   const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload?.length) {
-      const val = payload[0]?.value as number ?? 0;
-      const t = Number(val) || 0;
+      const p0 = payload[0];
+      const t = Number(p0?.value ?? 0);
+      const deviceId = (p0 as any)?.payload?.id ?? String(label);
+
       const level =
         t <= 20 ? 'Cool' :
           t <= 30 ? 'Normal' :
@@ -96,7 +99,8 @@ export default function TemperatureLineChart({ upsData }: Props) {
           className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-100 p-3 min-w-[160px]"
           style={{ WebkitBackdropFilter: 'blur(6px)' }}
         >
-          <div className="text-xs font-semibold text-gray-800 mb-2">{String(label)}</div>
+          {/* ใช้ ID ที่ type-safe แล้ว */}
+          <div className="text-xs font-semibold text-gray-800 mb-2">{deviceId}</div>
           <div className="flex items-center gap-2 text-sm">
             <span
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-white"
