@@ -50,13 +50,17 @@ export default function DataTable({ upsData }: DataTableProps) {
                     </td>
                     <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${ups.status === 'Online'
+                        className={`px-2 py-1 rounded-full text-xs font-semibold
+                          ${ups.status === 'Online'
                             ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                            : ups.status === 'Offline'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
                           }`}
                       >
                         {ups.status}
                       </span>
+
                     </td>
                     <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                       {ups.ip}
