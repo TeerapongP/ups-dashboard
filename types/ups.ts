@@ -1,6 +1,6 @@
 export interface UPSData {
   id: string;
-  status: 'Online' | 'Offline';
+  status: 'Online' | 'Offline' | 'Brownouts';
   ip: string;
   brand: string;
   model: string;
@@ -36,15 +36,15 @@ export interface UPSData {
   inputMax: number | null;
   inputMin: number | null;
 
-  // ฟิลด์ที่เพิ่มเข้ามาจาก backend
-  manufacturer: string | null;
-  firmwareVersion: string | null;
-  ratingVoltageV: number | null;
-  ratingFrequencyHz: number | null;
-  ratingBatteryVoltageV: number | null;
-  batteryChargeVoltageV: number | null;
-  batteryCount: number | null;
-  lastBatteryReplaceDate: string | null;
+  // // ฟิลด์ที่เพิ่มเข้ามาจาก backend
+  // manufacturer: string | null;
+  // firmwareVersion: string | null;
+  // ratingVoltageV: number | null;
+  // ratingFrequencyHz: number | null;
+  // ratingBatteryVoltageV: number | null;
+  // batteryChargeVoltageV: number | null;
+  // batteryCount: number | null;
+  // lastBatteryReplaceDate: string | null;
 }
 
 // ถ้าคุณเรียก endpoint /ups แบบรวม
