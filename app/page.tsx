@@ -118,8 +118,8 @@ export default function UPSDashboard() {
     } else {
       // รอบถัดไป: แสดงเฉพาะเมื่อมีการเปลี่ยนสถานะจริง
       queue.push(
-        { type: 'error', msg: `ไฟดับ ${outages.length} จุด: ${formatNames(outages)}`, cond: outages.length > 0 },
-        { type: 'warning', msg: `ไฟตก/ไฟต่ำ ${powerFails.length} จุด: ${formatNames(powerFails)}`, cond: powerFails.length > 0 },
+        { type: 'error', msg: `ติดต่อ UPS ไม่ได้ ${outages.length} จุด: ${formatNames(outages)}`, cond: outages.length > 0 },
+        { type: 'warning', msg: `ไฟตก ${powerFails.length} จุด: ${formatNames(powerFails)}`, cond: powerFails.length > 0 },
         { type: 'success', msg: `ไฟกลับมาแล้ว ${recovered.length} จุด: ${formatNames(recovered)}`, cond: recovered.length > 0 },
       );
     }
