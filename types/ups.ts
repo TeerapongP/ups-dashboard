@@ -1,6 +1,6 @@
 export interface UPSData {
   id: string;
-  status: 'Online' | 'Offline' | 'Brownouts';
+  status: 'Online' | 'Offline' | 'PowerFail';
   ip: string;
   brand: string;
   model: string;

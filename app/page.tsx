@@ -16,9 +16,8 @@ import { useUpsPolling } from '@/hooks/useUpsPolling';
 import type { UPSData } from '@/types/ups';
 import { useState, useEffect, useMemo, useRef, useCallback, useDeferredValue } from 'react';
 
-
-function isPowerOutage(u: UPSData): boolean {
-  return (u.status ?? '').trim().toLowerCase() === 'offline';
+function normalizeStatus(s?: string) {
+  return (s ?? '').trim();
 }
 
 export default function UPSDashboard() {
@@ -39,6 +38,7 @@ export default function UPSDashboard() {
 
   const { upsData, loading, error } = useUpsPolling(requestUrl, 30000);
 
+  // ====== First load + filter handling ======
   const firstLoadRef = useRef(true);
   useEffect(() => {
     if (upsData?.length) {
@@ -60,51 +60,58 @@ export default function UPSDashboard() {
     }
   }, [error]);
 
-  const prevOutageIdsRef = useRef<Set<string>>(new Set());
+  const prevStatusMapRef = useRef<Record<string, string>>({});
+  const lastToastAtRef = useRef<number>(0);
+  const TOAST_COOLDOWN_MS = 2500; // กันสแปมเล็กน้อย
 
   useEffect(() => {
     if (!upsData?.length) return;
 
-    const outagesNow = new Set(
-      upsData.filter(isPowerOutage).map(u => u.id)
-    );
-    const outagesPrev = prevOutageIdsRef.current;
+    const prevStatusMap = prevStatusMapRef.current;
+    const newStatusMap: Record<string, string> = {};
 
-    const newlyOut = [...outagesNow].filter(id => !outagesPrev.has(id));
-    if (newlyOut.length) {
-      setToastType("warning");
-      setToastMessage(
-        `ไฟดับ ${newlyOut.length} จุด: ${newlyOut
-          .slice(0, 3)
-          .join(", ")}${newlyOut.length > 3 ? "…" : ""}`
-      );
-      setShowToast(true);
+    const outages: string[] = [];
+    const recovered: string[] = [];
+    const powerFails: string[] = [];
+
+    for (const u of upsData) {
+      const prev = normalizeStatus(prevStatusMap[u.id]);
+      const curr = normalizeStatus(u.status);
+      newStatusMap[u.id] = curr;
+
+      if (!prev) continue;
+
+      if (prev === 'Online' && curr === 'Offline') {
+        outages.push(u.id);
+      } else if (prev === 'Offline' && curr === 'Online') {
+        recovered.push(u.id);
+      } else if (curr === 'PowerFail' && prev !== 'PowerFail') {
+        powerFails.push(u.id);
+      }
     }
 
-    // UPS ที่ไฟกลับมาแล้ว
-    const recovered = [...outagesPrev].filter(id => !outagesNow.has(id));
-    if (recovered.length) {
-      setToastType("success");
-      setToastMessage(
-        `ไฟกลับมาแล้ว ${recovered.length} จุด: ${recovered
-          .slice(0, 3)
-          .join(", ")}${recovered.length > 3 ? "…" : ""}`
-      );
-      setShowToast(true);
+    const formatNames = (ids: string[]) => `${ids.slice(0, 3).join(', ')}${ids.length > 3 ? '…' : ''}`;
+
+    const now = Date.now();
+    const canToast = now - lastToastAtRef.current >= TOAST_COOLDOWN_MS;
+
+    const queue: Array<{ type: 'error' | 'warning' | 'success'; msg: string; cond: boolean }> = [
+      { type: 'error', msg: `ไฟดับ ${outages.length} จุด: ${formatNames(outages)}`, cond: outages.length > 0 },
+      { type: 'warning', msg: `ไฟตก/ไฟต่ำ ${powerFails.length} จุด: ${formatNames(powerFails)}`, cond: powerFails.length > 0 },
+      { type: 'success', msg: `ไฟกลับมาแล้ว ${recovered.length} จุด: ${formatNames(recovered)}`, cond: recovered.length > 0 },
+    ];
+
+    if (canToast) {
+      const item = queue.find(q => q.cond);
+      if (item) {
+        setToastType(item.type);
+        setToastMessage(item.msg);
+        setShowToast(true);
+        lastToastAtRef.current = now;
+      }
     }
 
-    const stillOffline = [...outagesNow];
-    if (stillOffline.length) {
-      setToastType("warning");
-      setToastMessage(
-        `ยัง Offline อยู่ ${stillOffline.length} จุด: ${stillOffline
-          .slice(0, 3)
-          .join(", ")}${stillOffline.length > 3 ? "…" : ""}`
-      );
-      setShowToast(true);
-    }
-
-    prevOutageIdsRef.current = outagesNow;
+    prevStatusMapRef.current = newStatusMap;
   }, [upsData]);
 
   const handleFilter = useCallback((filtered: UPSData[], groupByValue: string) => {
@@ -117,8 +124,9 @@ export default function UPSDashboard() {
   if (loading) return <Loading />;
 
   const totalCount = upsData.length;
-  const onlineCount = upsData.filter(u => (u.status ?? '').toLowerCase() === 'online').length;
-  const offlineCount = upsData.filter(u => (u.status ?? '').toLowerCase() === 'offline').length;
+  const onlineCount = upsData.filter(u => normalizeStatus(u.status) === 'Online').length;
+  const offlineCount = upsData.filter(u => normalizeStatus(u.status) === 'Offline').length;
+  const powerFailCount = upsData.filter(u => normalizeStatus(u.status) === 'PowerFail').length;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -155,12 +163,14 @@ export default function UPSDashboard() {
         <div className="max-w-full px-6 py-4">
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-600">
             <div>© 2025 UPS Monitoring Dashboard. All rights reserved.</div>
-            <div className="flex items-center space-x-4 mt-2 md:mt-0">
-              <span>Total UPS Units: {totalCount}</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 md:mt-0">
+              <span>Total: {totalCount}</span>
               <span>•</span>
               <span>Online: {onlineCount}</span>
               <span>•</span>
               <span>Offline: {offlineCount}</span>
+              <span>•</span>
+              <span>PowerFail: {powerFailCount}</span>
             </div>
           </div>
         </div>
