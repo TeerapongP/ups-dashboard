@@ -13,7 +13,7 @@ export default function SearchFilter({ upsData, onFilter }: SearchFilterProps) {
     let filtered = upsData;
 
     if (searchValue.trim()) {
-      filtered = filtered.filter(ups => 
+      filtered = filtered.filter(ups =>
         ups.id.toLowerCase().includes(searchValue.toLowerCase()) ||
         ups.brand.toLowerCase().includes(searchValue.toLowerCase()) ||
         ups.model.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -54,7 +54,7 @@ export default function SearchFilter({ upsData, onFilter }: SearchFilterProps) {
   return (
     <div className="bg-white rounded-xl shadow-md p-6 m-6">
       <h3 className="text-lg font-bold text-gray-800 mb-4">Search & Filter</h3>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Search Input */}
         <div className="relative">
@@ -89,6 +89,8 @@ export default function SearchFilter({ upsData, onFilter }: SearchFilterProps) {
             <option value="all">All Status</option>
             <option value="online">Online Only</option>
             <option value="offline">Offline Only</option>
+            <option value="powerfail">Powerfail Only</option>
+
           </select>
         </div>
 
