@@ -16,8 +16,12 @@ import { useUpsPolling } from '@/hooks/useUpsPolling';
 import type { UPSData } from '@/types/ups';
 import { useState, useEffect, useMemo, useRef, useCallback, useDeferredValue } from 'react';
 
-function normalizeStatus(s?: string) {
-  return (s ?? '').trim();
+function normalizeStatus(s?: string): string {
+  const v = (s ?? '').trim().toLowerCase();
+  if (v === 'online') return 'Online';
+  if (v === 'offline') return 'Offline';
+  if (v === 'powerfail' || v === 'power_fail' || v === 'power-fail') return 'PowerFail';
+  return '';
 }
 
 export default function UPSDashboard() {
@@ -60,6 +64,7 @@ export default function UPSDashboard() {
     }
   }, [error]);
 
+  // ====== Status transition detection (Online / Offline / PowerFail) ======
   const prevStatusMapRef = useRef<Record<string, string>>({});
   const lastToastAtRef = useRef<number>(0);
   const TOAST_COOLDOWN_MS = 2500; // กันสแปมเล็กน้อย
@@ -67,27 +72,33 @@ export default function UPSDashboard() {
   useEffect(() => {
     if (!upsData?.length) return;
 
-    const prevStatusMap = prevStatusMapRef.current;
-    const newStatusMap: Record<string, string> = {};
+    const prevMap = prevStatusMapRef.current;
+    const isFirstTick = Object.keys(prevMap).length === 0; // ยังไม่เคยมีสถานะเก่า
 
-    const outages: string[] = [];
-    const recovered: string[] = [];
-    const powerFails: string[] = [];
+    const newMap: Record<string, string> = {};
+
+    const outages: string[] = [];    // Online -> Offline
+    const recovered: string[] = [];  // Offline -> Online
+    const powerFails: string[] = []; // any -> PowerFail (เฉพาะเมื่อเพิ่งเปลี่ยน)
+
+    const currentOffline: string[] = [];   // สรุปภาพรวมปัจจุบัน (ใช้รอบแรก)
+    const currentPowerFail: string[] = [];
 
     for (const u of upsData) {
-      const prev = normalizeStatus(prevStatusMap[u.id]);
+      const prev = normalizeStatus(prevMap[u.id]);
       const curr = normalizeStatus(u.status);
-      newStatusMap[u.id] = curr;
+      newMap[u.id] = curr;
 
+      // เก็บภาพรวมปัจจุบัน
+      if (curr === 'Offline') currentOffline.push(u.id);
+      if (curr === 'PowerFail') currentPowerFail.push(u.id);
+
+      // หากยังไม่มีสถานะก่อนหน้า ให้ข้าม transition (จะสรุปรอบแรกด้านล่าง)
       if (!prev) continue;
 
-      if (prev === 'Online' && curr === 'Offline') {
-        outages.push(u.id);
-      } else if (prev === 'Offline' && curr === 'Online') {
-        recovered.push(u.id);
-      } else if (curr === 'PowerFail' && prev !== 'PowerFail') {
-        powerFails.push(u.id);
-      }
+      if (prev === 'Online' && curr === 'Offline') outages.push(u.id);
+      else if (prev === 'Offline' && curr === 'Online') recovered.push(u.id);
+      else if (curr === 'PowerFail' && prev !== 'PowerFail') powerFails.push(u.id);
     }
 
     const formatNames = (ids: string[]) => `${ids.slice(0, 3).join(', ')}${ids.length > 3 ? '…' : ''}`;
@@ -95,11 +106,23 @@ export default function UPSDashboard() {
     const now = Date.now();
     const canToast = now - lastToastAtRef.current >= TOAST_COOLDOWN_MS;
 
-    const queue: Array<{ type: 'error' | 'warning' | 'success'; msg: string; cond: boolean }> = [
-      { type: 'error', msg: `ไฟดับ ${outages.length} จุด: ${formatNames(outages)}`, cond: outages.length > 0 },
-      { type: 'warning', msg: `ไฟตก/ไฟต่ำ ${powerFails.length} จุด: ${formatNames(powerFails)}`, cond: powerFails.length > 0 },
-      { type: 'success', msg: `ไฟกลับมาแล้ว ${recovered.length} จุด: ${formatNames(recovered)}`, cond: recovered.length > 0 },
-    ];
+    // Queue ตามความสำคัญ: error > warning > success
+    const queue: Array<{ type: 'error' | 'warning' | 'success'; msg: string; cond: boolean }> = [];
+
+    if (isFirstTick) {
+      // รอบแรก: ยังไม่มี prev → แสดงภาพรวมสถานะที่มีอยู่ตอนนี้เลย
+      queue.push(
+        { type: 'error', msg: `ยัง Offline อยู่ ${currentOffline.length} จุด: ${formatNames(currentOffline)}`, cond: currentOffline.length > 0 },
+        { type: 'warning', msg: `ไฟตก/ไฟต่ำ ${currentPowerFail.length} จุด: ${formatNames(currentPowerFail)}`, cond: currentPowerFail.length > 0 },
+      );
+    } else {
+      // รอบถัดไป: แสดงเฉพาะเมื่อมีการเปลี่ยนสถานะจริง
+      queue.push(
+        { type: 'error', msg: `ไฟดับ ${outages.length} จุด: ${formatNames(outages)}`, cond: outages.length > 0 },
+        { type: 'warning', msg: `ไฟตก/ไฟต่ำ ${powerFails.length} จุด: ${formatNames(powerFails)}`, cond: powerFails.length > 0 },
+        { type: 'success', msg: `ไฟกลับมาแล้ว ${recovered.length} จุด: ${formatNames(recovered)}`, cond: recovered.length > 0 },
+      );
+    }
 
     if (canToast) {
       const item = queue.find(q => q.cond);
@@ -111,7 +134,8 @@ export default function UPSDashboard() {
       }
     }
 
-    prevStatusMapRef.current = newStatusMap;
+    // อัปเดตสถานะรอบก่อน
+    prevStatusMapRef.current = newMap;
   }, [upsData]);
 
   const handleFilter = useCallback((filtered: UPSData[], groupByValue: string) => {
