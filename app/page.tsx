@@ -35,10 +35,21 @@ export default function UPSDashboard() {
   const { loggedIn } = useAuth();
 
   const requestUrl = useMemo(() => {
-    const base = process.env.NEXT_PUBLIC_API_URL ?? '';
-    const qs = 'timeout=1&retries=0&workers=12&ttl=2';
-    return `${base ? `${base}/ups` : '/api/ups'}?${qs}`;
+    const rawBase = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+    // ตัด/เติมให้เหลือ api base แค่รอบเดียว
+    const trimmed = rawBase.replace(/\/+$/, ""); // ตัด trailing slash
+    const apiBase = trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+
+    const qs = "timeout=1&retries=0&workers=12&ttl=2&persist=true";
+    const endpoint = "ups-getall";
+
+    // ถ้าไม่ตั้ง NEXT_PUBLIC_API_URL ให้ fallback ไปใช้ Next API route
+    if (!rawBase) return `/api/${endpoint}?${qs}`;
+
+    return `${apiBase}/${endpoint}?${qs}`;
   }, []);
+
 
   const { upsData, loading, error } = useUpsPolling(requestUrl, 30000);
 
@@ -164,6 +175,7 @@ export default function UPSDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {loggedIn ? (
             <>
+
               <BatteryDonutChart upsData={upsData} />
               <VoltageLineChart upsData={upsData} />
             </>

@@ -1,18 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { UPSData } from "@/types/ups";
+import { UseUpsPollingReturn } from "@/types/useUpsPollingReturn";
 
-interface UseUpsPollingReturn {
-  upsData: UPSData[];
-  loading: boolean;
-  error: string | null;
-}
 
 
 export const useUpsPolling = (
 requestUrl: string, intervalMs: number = 30000): UseUpsPollingReturn => {
-  const [upsData, setUpsData] = useState<UPSData[]>([]);
+  const [upsData, setUpsData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
