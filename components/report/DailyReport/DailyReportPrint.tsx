@@ -21,7 +21,6 @@ const styles = {
   cardLabel: { fontSize: '12px', color: '#6B7280' },
   cardValue: { fontSize: '20px', fontWeight: 700 as const, marginTop: '6px' },
   sectionTitle: { fontSize: '16px', fontWeight: 700 as const, margin: '18px 0 8px' },
-  subTitle: { fontWeight: 700 as const, margin: '10px 0 6px' },
   table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: '12px' },
   th: { background: '#F3F4F6', border: '1px solid #E5E7EB', padding: '8px', textAlign: 'center' as const },
   td: { border: '1px solid #E5E7EB', padding: '8px', verticalAlign: 'top' as const, textAlign: 'center' as const },
@@ -64,8 +63,8 @@ export function DailyReportPrint({ data }: { data: DailyReportPayload }) {
     0
   );
   const totalMinInPeriod =
-    Math.max(1, totalDevices) * // ป้องกันหารศูนย์
-    Math.max(1, Number(data.periodTotalMinutes ?? 0) || 1440); // default 1 วัน
+    Math.max(1, totalDevices) *
+    Math.max(1, Number(data.periodTotalMinutes ?? 0) || 1440);
   const uptimePercent =
     totalMinInPeriod > 0 ? ((totalMinInPeriod - totalDowntimeMin) / totalMinInPeriod) * 100 : 100;
 
@@ -79,7 +78,8 @@ export function DailyReportPrint({ data }: { data: DailyReportPayload }) {
       loc: d.meta.location || '-',
       dtMin,
       evCount,
-      last: d.meta.last_sta || '-',
+      // FIX: ใช้ lastStatus ที่ถูกต้อง (เดิมดึง d.meta.last_sta)
+      last: d.meta.lastStatus || '-',
     };
   });
 
@@ -97,7 +97,6 @@ export function DailyReportPrint({ data }: { data: DailyReportPayload }) {
   });
 
   // unified event log (จาก/เป็น/เวลาเปลี่ยน/ระยะเวลา)
-  // ถ้าไม่มี fromStatus/toStatus จะ infer แบบง่าย
   const unifiedEvents: {
     upsId: string;
     from: string;
@@ -225,8 +224,8 @@ export function DailyReportPrint({ data }: { data: DailyReportPayload }) {
         <thead>
           <tr>
             <th style={styles.th}>UPS ID</th>
-            <th style={styles.th}>จาก</th>
-            <th style={styles.th}>เป็น</th>
+            <th style={styles.th}>สถานะเดิม</th>
+            <th style={styles.th}>สถานะปัจจุบัน</th>
             <th style={styles.th}>เวลาเปลี่ยน</th>
             <th style={styles.th}>ระยะเวลา (นาที)</th>
           </tr>
@@ -241,8 +240,8 @@ export function DailyReportPrint({ data }: { data: DailyReportPayload }) {
               <td style={styles.td}>{ev.durationMin}</td>
             </tr>
           ))}
-          {devices.every(d => (d.offline?.length || 0) === 0) && (
-            <tr><td style={styles.td} colSpan={7}>— ไม่มีเหตุการณ์ —</td></tr>
+          {unifiedEvents.length === 0 && (
+            <tr><td style={styles.td} colSpan={5}>— ไม่มีเหตุการณ์ —</td></tr>
           )}
         </tbody>
       </table>

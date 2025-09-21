@@ -29,7 +29,7 @@ const AdminDashboard: React.FC = () => {
   const trimmed = rawBase.replace(/\/+$/, '');
   const apiBase = trimmed
     ? (trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`)
-    : 'http://localhost:8000/api';
+    : 'http://158.108.196.162:3000/api';
 
   const requestUrl = useMemo(() => {
     const endpoint = 'snmp/devices';
