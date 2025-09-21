@@ -10,7 +10,8 @@ import { useUpsDevice } from '@/hooks/useUpsDevice';
 import Loading from '@/components/LoadingComponent/Loading';
 import Toast from '@/components/ToastComponent/Toast';
 import { DailyReportPayload } from '@/types/report';
-import { generatePdfFrom } from '@/components/report/GeneratePdfFrom/generatePdfFromComponent';
+import { generatePdfFrom } from '@/components/report/GeneratePdfFrom/GeneratePdfFromComponent';
+import UPSModal from '@/components/UPSModal/UPSModal';
 
 const AdminDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,8 +22,9 @@ const AdminDashboard: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastType, setToastType] = useState<'success' | 'error' | 'warning'>('success');
   const [toastMessage, setToastMessage] = useState('');
-
-  // ---- API base: ถ้าไม่มี env ให้ fallback dev เป็น FastAPI โดยตรง (กัน 404)
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'insert' | 'edit'>('insert');
+  const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const rawBase = process.env.NEXT_PUBLIC_API_URL ?? '';
   const trimmed = rawBase.replace(/\/+$/, '');
   const apiBase = trimmed
@@ -31,8 +33,6 @@ const AdminDashboard: React.FC = () => {
 
   const requestUrl = useMemo(() => {
     const endpoint = 'snmp/devices';
-    // ถ้ามี rawBase → ใช้ apiBase ชี้ FastAPI แน่ ๆ
-    // ถ้าอยากใช้ proxy ผ่าน Next.js ให้ตั้ง next.config.js แล้วเปลี่ยนเป็น `/api/${endpoint}`
     return `${apiBase}/${endpoint}`;
   }, [apiBase]);
 
@@ -54,63 +54,139 @@ const AdminDashboard: React.FC = () => {
     );
   }, [devices, searchTerm]);
 
+  const handleAddDevice = () => {
+    setModalMode('insert');
+    setEditingDevice(null);
+    setIsModalOpen(true);
+  };
   const handleViewDevice = (device: Device) => {
     setSelectedDevice(device);
     setIsDelete(false);
   }
-  const handleEditDevice = (device: Device) => console.log('Edit device:', device);
-  const handleAddDevice = () => console.log('Add new device');
+  const handleEditDevice = async (device: Device) => {
+    try {
+      setModalMode('edit');
+
+      // Fetch device configuration from API
+      const configUrl = `${apiBase}/snmp/devices/${encodeURIComponent(device.ip)}/config?base_profile=STANDARD`;
+      const response = await fetch(configUrl, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json'
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const configData = await response.json();
+        // Map the oids from API response to data property for UPSModal
+        const deviceWithConfig = {
+          ...device,
+          data: configData.oids || configData || device.data || {}
+        };
+        setEditingDevice(deviceWithConfig);
+      } else {
+        setToastMessage("Failed to fetch device config, using original data");
+        setToastType("warning")
+        setShowToast(true)
+        setEditingDevice(device);
+      }
+
+      setIsModalOpen(true);
+    } catch (error) {
+      setToastMessage('Error fetching device config:' + error);
+      setToastType("error")
+      setShowToast(true)
+      setEditingDevice(device);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleSaveDevice = async (device: Device, mode: 'insert' | 'edit') => {
+    try {
+      let res: Response;
+      if (mode === 'edit') {
+        // แก้ไขอุปกรณ์ - use correct SNMP endpoint
+        res = await fetch(`${apiBase}/snmp/devices/${device.ups_id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(device),
+        });
+      } else {
+        res = await fetch(`${apiBase}/snmp/devices/with-oids`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(device),
+        });
+      }
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `Request failed: ${res.status}`);
+      }
+
+      // ถ้า success
+      await refetch(); // โหลดข้อมูลใหม่
+      setToastMessage(`${mode === 'edit' ? "อัพเดท" : "เพิ่ม"} ${device.ups_id} สำเร็จ`);
+      setToastType("success");
+      setShowToast(true);
+    } catch (error: any) {
+      setToastMessage(`บันทึกไม่สำเร็จ: ${error.message || error}`);
+      setToastType("error");
+      setShowToast(true);
+    }
+  };
 
   const [isGenerating, setIsGenerating] = useState(false);
   const handleGenerateReport = async () => {
-  if (isGenerating) return;           // กันซ้ำชั้นแรก
-  try {
-    if (!selectedDate) {
-      setToastMessage("กรุณาเลือกวันที่ก่อน");
-      setToastType("warning");
+    if (isGenerating) return;           // กันซ้ำชั้นแรก
+    try {
+      if (!selectedDate) {
+        setToastMessage("กรุณาเลือกวันที่ก่อน");
+        setToastType("warning");
+        setShowToast(true);
+        return;
+      }
+
+      setIsGenerating(true);
+
+      const y = selectedDate.getFullYear();
+      const m = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const d = String(selectedDate.getDate()).padStart(2, "0");
+      const dateStr = `${y}-${m}-${d}`;
+
+      const params = new URLSearchParams();
+      params.set("only_with_events", "true");
+      const url = `${apiBase}/daily/${dateStr}/json?${params.toString()}`;
+
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { accept: "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+
+      const data: DailyReportPayload = await res.json();
+
+      await generatePdfFrom({
+        data,
+        fileName: `DailyReport_${dateStr}.pdf`,
+      });
+
+      setToastMessage(`สร้างรายงานวันที่ ${dateStr} สำเร็จ`);
+      setToastType("success");
       setShowToast(true);
-      return;
+    } catch (err) {
+      console.error("Generate report error:", err);
+      setToastMessage("สร้างรายงานไม่สำเร็จ");
+      setToastType("error");
+      setShowToast(true);
+    } finally {
+      setIsGenerating(false);
     }
-
-    setIsGenerating(true);
-
-    // ✅ ใช้ local date (UTC+7) ไม่ใช้ toISOString
-    const y = selectedDate.getFullYear();
-    const m = String(selectedDate.getMonth() + 1).padStart(2, "0");
-    const d = String(selectedDate.getDate()).padStart(2, "0");
-    const dateStr = `${y}-${m}-${d}`;
-
-    const params = new URLSearchParams();
-    params.set("only_with_events", "true");
-    const url = `${apiBase}/daily/${dateStr}/json?${params.toString()}`;
-
-    const res = await fetch(url, {
-      method: "GET",
-      headers: { accept: "application/json" },
-      credentials: "include",
-    });
-    if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-
-    const data: DailyReportPayload = await res.json();
-
-    await generatePdfFrom({
-      data,
-      fileName: `DailyReport_${dateStr}.pdf`,
-      // one-page บังคับอยู่แล้วในฟังก์ชันใหม่
-    });
-
-    setToastMessage(`สร้างรายงานวันที่ ${dateStr} สำเร็จ`);
-    setToastType("success");
-    setShowToast(true);
-  } catch (err) {
-    console.error("Generate report error:", err);
-    setToastMessage("สร้างรายงานไม่สำเร็จ");
-    setToastType("error");
-    setShowToast(true);
-  } finally {
-    setIsGenerating(false);
-  }
-};
+  };
 
 
   if (loading) return <Loading />;
@@ -178,6 +254,14 @@ const AdminDashboard: React.FC = () => {
           onClose={() => setSelectedDevice(null)}
           isDelete={isDelete}
           onConfirmDelete={confirmDelete}
+        />
+
+        <UPSModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSaveDevice}
+          device={editingDevice ?? undefined}
+          mode={modalMode}
         />
       </div>
 
