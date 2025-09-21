@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, Plus, FileDown, Calendar } from 'lucide-react';
+import { Search, Plus, FileDown } from 'lucide-react';
 import { SearchAndControlsProps } from '@/types/searchAndControls';
 import { BeautifulDatePicker } from '../BeautifulDatePicker/BeautifulDatePicker';
 

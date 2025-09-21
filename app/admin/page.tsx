@@ -93,8 +93,8 @@ const AdminDashboard: React.FC = () => {
       }
 
       setIsModalOpen(true);
-    } catch (error) {
-      setToastMessage('Error fetching device config:' + error);
+    } catch (error: unknown) {
+      setToastMessage('Error fetching device config: ' + String(error));
       setToastType("error")
       setShowToast(true)
       setEditingDevice(device);
@@ -132,8 +132,9 @@ const AdminDashboard: React.FC = () => {
       setToastMessage(`${mode === 'edit' ? "อัพเดท" : "เพิ่ม"} ${device.ups_id} สำเร็จ`);
       setToastType("success");
       setShowToast(true);
-    } catch (error: any) {
-      setToastMessage(`บันทึกไม่สำเร็จ: ${error.message || error}`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setToastMessage(`บันทึกไม่สำเร็จ: ${errorMessage}`);
       setToastType("error");
       setShowToast(true);
     }
@@ -178,9 +179,10 @@ const AdminDashboard: React.FC = () => {
       setToastMessage(`สร้างรายงานวันที่ ${dateStr} สำเร็จ`);
       setToastType("success");
       setShowToast(true);
-    } catch (err) {
-      console.error("Generate report error:", err);
-      setToastMessage("สร้างรายงานไม่สำเร็จ");
+    } catch (error: unknown) {
+      console.error("Generate report error:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setToastMessage(`สร้างรายงานไม่สำเร็จ: ${errorMessage}`);
       setToastType("error");
       setShowToast(true);
     } finally {
@@ -215,8 +217,9 @@ const AdminDashboard: React.FC = () => {
       setToastMessage(`ลบ ${selectedDevice.ups_id} สำเร็จ`);
       setToastType('success');
       setShowToast(true);
-    } catch (err: any) {
-      setToastMessage(`ลบ ${selectedDevice.ups_id} ไม่สำเร็จ`);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setToastMessage(`ลบ ${selectedDevice.ups_id} ไม่สำเร็จ: ${errorMessage}`);
       setToastType('error');
       setShowToast(true);
     } finally {
@@ -274,7 +277,7 @@ const AdminDashboard: React.FC = () => {
               type: toastType,
               duration: 4000,
             }}
-            onRemove={(id: any) => {
+            onRemove={(id: string) => {
               if (id === 'adminToast') setShowToast(false);
             }}
           />

@@ -12,8 +12,8 @@ const UPSModal: React.FC<UPSModalProps> = ({
     device,
     mode,
 }) => {
-    const [formData, setFormData] = useState<Device & { data: any }>({
-        ups_id: undefined as any, // ปล่อยว่างได้ตอน insert; ตอน edit จะถูกเซ็ตจาก props
+    const [formData, setFormData] = useState<Device & { data: Record<string, unknown> }>({
+        ups_id: '', // ปล่อยว่างได้ตอน insert; ตอน edit จะถูกเซ็ตจาก props
         ip: '',
         brand: '',
         model: '',
@@ -66,7 +66,7 @@ const UPSModal: React.FC<UPSModalProps> = ({
             setFormData({ ...device });
         } else {
             setFormData({
-                ups_id: undefined as any,
+                ups_id: '',
                 ip: '',
                 brand: '',
                 model: '',
@@ -127,7 +127,7 @@ const UPSModal: React.FC<UPSModalProps> = ({
     };
 
     // handlers
-    const handleInputChange = (field: keyof Device, value: any) => {
+    const handleInputChange = (field: keyof Device, value: unknown) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
         if (errors[field as string]) {
             setErrors((prev) => ({ ...prev, [field as string]: '' }));
@@ -195,8 +195,9 @@ const UPSModal: React.FC<UPSModalProps> = ({
         try {
             await onSave(formData, mode);
             onClose();
-        } catch (e: any) {
-            setErrors({ general: e?.message ?? 'Save failed' });
+        } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : 'Save failed';
+            setErrors({ general: errorMessage });
         } finally {
             setIsLoading(false);
         }
@@ -364,7 +365,7 @@ const UPSModal: React.FC<UPSModalProps> = ({
                                                 </label>
                                                 <input
                                                     type="text"
-                                                    value={formData.data[field.key] ?? ''}
+                                                    value={String(formData.data[field.key] ?? '')}
                                                     onChange={(e) => handleSnmpDataChange(field.key, e.target.value)}
                                                     placeholder="SNMP OID"
                                                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-200 font-mono text-sm"

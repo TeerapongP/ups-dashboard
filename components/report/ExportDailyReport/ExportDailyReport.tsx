@@ -5,10 +5,21 @@ import ReactDOM from 'react-dom/client';
 import type { DailyReportPayload } from '@/types/report';
 import { DailyReportPrint } from '../DailyReport/DailyReportPrint';
 
+// Type for html2pdf function
+interface Html2PdfFunction {
+  (): {
+    from: (element: HTMLElement) => {
+      set: (options: object) => {
+        save: () => Promise<void>;
+      };
+    };
+  };
+}
+
 // ใช้ html2pdf แบบ dynamic import
-async function ensureHtml2Pdf() {
+async function ensureHtml2Pdf(): Promise<Html2PdfFunction> {
   const mod = await import('html2pdf.js');
-  return (mod.default ?? mod) as any;
+  return (mod.default ?? mod) as Html2PdfFunction;
 }
 
 /** กดแล้วออกไฟล์ PDF */

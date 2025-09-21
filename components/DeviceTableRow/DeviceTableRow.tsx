@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import {  Eye, Edit3, Trash2, MoreVertical, BatteryCharging,  } from 'lucide-react';
+import {  Eye, Edit3, Trash2, BatteryCharging,  } from 'lucide-react';
 import { DeviceTableRowProps } from '@/types/deviceTableRow';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import dayjs from 'dayjs';

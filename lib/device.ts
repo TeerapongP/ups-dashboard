@@ -1,5 +1,5 @@
 export interface Device {
-  data: {};
+  data: Record<string, unknown>;
   ups_id: string;               
   ip: string;
   brand: string;
@@ -8,5 +8,5 @@ export interface Device {
   status: 'online' | 'powerFail' | 'offline';
   temperature?: number | null;   
   last_seen: string;        
-  profile_name: null;
+  profile_name: string | null;
 }
