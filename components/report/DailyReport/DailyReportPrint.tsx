@@ -226,7 +226,7 @@ export function DailyReportPrint({ data }: { data: DailyReportPayload }) {
             <th style={styles.th}>UPS ID</th>
             <th style={styles.th}>สถานะเดิม</th>
             <th style={styles.th}>สถานะปัจจุบัน</th>
-            <th style={styles.th}>เวลาเปลี่ยน</th>
+            <th style={styles.th}>เวลาที่เกิดเหตุการณ์</th>
             <th style={styles.th}>ระยะเวลา (นาที)</th>
           </tr>
         </thead>
