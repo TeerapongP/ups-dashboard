@@ -4,4 +4,6 @@ export interface DeviceDetailModalProps {
   device: Device | null;
   isOpen: boolean;
   onClose: () => void;
+  isDelete?: boolean
+  onConfirmDelete?: ()=> void;
 }

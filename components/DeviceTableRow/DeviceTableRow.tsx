@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Server, Eye, Edit3, Trash2, MoreVertical, BatteryCharging, Plug, } from 'lucide-react';
+import {  Eye, Edit3, Trash2, MoreVertical, BatteryCharging,  } from 'lucide-react';
 import { DeviceTableRowProps } from '@/types/deviceTableRow';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import dayjs from 'dayjs';
@@ -84,9 +84,6 @@ export const DeviceTableRow: React.FC<DeviceTableRowProps> = ({
             <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
           </button>
 
-          <button className="p-2 text-gray-400 hover:bg-gray-50 rounded-lg transition-colors">
-            <MoreVertical className="w-4 h-4" />
-          </button>
         </div>
       </td>
     </tr>

@@ -221,7 +221,7 @@ export default function UPSDashboard() {
               type: toastType,
               duration: 4000,
             }}
-            onRemove={(id) => {
+            onRemove={(id:any) => {
               if (id === 'dashboardToast') setShowToast(false);
             }}
           />

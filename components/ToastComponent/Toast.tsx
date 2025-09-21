@@ -1,6 +1,6 @@
-import { ToastProps } from '@/types/toast';
 import React, { useEffect, useState } from 'react';
 import { useCallback } from 'react';
+import {ToastProps} from "@/types/toast"
 
 const Toast: React.FC<ToastProps> = ({ toast, onRemove }) => {
     const [visible, setVisible] = useState(true);

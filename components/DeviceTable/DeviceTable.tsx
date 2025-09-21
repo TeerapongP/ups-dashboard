@@ -7,7 +7,6 @@ import { DeviceTableRow } from '../DeviceTableRow/DeviceTableRow';
 
 export const DeviceTable: React.FC<DeviceTableProps> = ({
   devices,
-  totalDevices,
   onViewDevice,
   onEditDevice,
   onDeleteDevice,

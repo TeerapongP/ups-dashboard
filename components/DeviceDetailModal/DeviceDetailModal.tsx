@@ -2,17 +2,19 @@
 
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Server } from 'lucide-react';
-import { DeviceDetailModalProps } from '@/types/DeviceDetailModal';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
+import { DeviceDetailModalProps } from '@/types/deviceDetailModal';
 
 export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
   device,
   isOpen,
   onClose,
+  isDelete,
+  onConfirmDelete,
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  // เรียก useEffect เสมอ แต่ทำงานเฉพาะตอนเปิด
+  // ป้องกัน scroll ด้านหลัง + ปิดด้วย Escape
   useEffect(() => {
     if (!isOpen) return;
 
@@ -30,7 +32,7 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  // คำนวณ lastSeen แบบปลอดภัยเสมอ
+  // Last Seen
   const lastSeen = useMemo(() => {
     const v = device?.last_seen;
     if (!v) return '-';
@@ -42,7 +44,6 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
     if (e.target === e.currentTarget) onClose();
   };
 
-  // คืน null หลัง "ประกาศ hooks แล้ว"
   if (!isOpen || !device) return null;
 
   return (
@@ -58,6 +59,7 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
         className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto ring-1 ring-black/5"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Header */}
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -66,7 +68,9 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">{device.ip}</h2>
-                <p className="text-gray-600">{device.brand} {device.model}</p>
+                <p className="text-gray-600">
+                  {device.brand} {device.model}
+                </p>
               </div>
             </div>
             <button
@@ -79,6 +83,7 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
           </div>
         </div>
 
+        {/* Content */}
         <div className="p-6">
           <div className="grid grid-cols-2 gap-6">
             <div>
@@ -102,14 +107,28 @@ export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
             </div>
           </div>
 
-          {/* <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
-            <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
-              แก้ไขข้อมูล
-            </button>
-            <button className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
-              ลบอุปกรณ์
-            </button>
-          </div> */}
+          {/* Delete section */}
+          {isDelete && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-sm text-gray-700 mb-4">
+                คุณแน่ใจหรือไม่ว่าต้องการลบอุปกรณ์นี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={onConfirmDelete}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  ยืนยันลบ
+                </button>
+                <button
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  ยกเลิก
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

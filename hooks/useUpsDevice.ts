@@ -1,55 +1,44 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Device } from "@/lib/device";
 
 export function useUpsDevice(url: string) {
   const [deviceData, setDeviceData] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    const ctrl = new AbortController();
-    let active = true;
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-      try {
-        const res = await fetch(url, {
-          method: "GET",
-          credentials: "include",  
-          headers: {
-            Accept: "application/json",
-          },
-          signal: ctrl.signal,
-        });
-
-        if (!res.ok) {
-          let msg = `Request failed: ${res.status}`;
-          try {
-            const body = await res.json();
-            if (body?.detail) msg += ` - ${JSON.stringify(body.detail)}`;
-          } catch {}
-          throw new Error(msg);
-        }
-
-        const data = await res.json();
-        if (active) setDeviceData(Array.isArray(data) ? data : []);
-      } catch (err: any) {
-        if (active && err?.name !== "AbortError") {
-          setError(err?.message || "Error fetching data");
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-
-    fetchData();
-    return () => {
-      active = false;
-      ctrl.abort();
-    };
+    try {
+      const res = await fetch(url, {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      const data = await res.json();
+      setDeviceData(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      if (err?.name !== "AbortError") setError(err?.message || "Network error");
+    } finally {
+      setLoading(false);
+    }
   }, [url]);
 
-  return { deviceData, loading, error };
+  // โหลดครั้งแรก / เวลา url เปลี่ยน
+  useEffect(() => {
+    fetchData();
+    return () => abortRef.current?.abort();
+  }, [fetchData]);
+
+  // ให้ component อื่นเรียกดึงใหม่ได้ทันที
+  const refetch = useCallback(() => fetchData(), [fetchData]);
+
+  return { deviceData, loading, error, refetch, setDeviceData };
 }

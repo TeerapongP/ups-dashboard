@@ -33,7 +33,7 @@ function compareIp(a?: string, b?: string) {
 
 export default function DataTable({ upsData }: DataTableProps) {
   const { loggedIn } = useAuth();
-  const [asc, setAsc] = useState(true);
+  const [asc] = useState(true);
 
   // เรียงตาม IP (สลับทิศทางได้ด้วยปุ่ม)
   const sortedData = useMemo(() => {
