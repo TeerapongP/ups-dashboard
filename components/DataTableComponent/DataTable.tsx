@@ -8,69 +8,99 @@ interface DataTableProps {
   upsData: UPSData[];
 }
 
-/** แปลง IPv4 เป็นตัวเลข 4 ช่องสำหรับเปรียบเทียบ (รองรับ null/ว่าง/รูปแบบเพี้ยน) */
-function ipToQuads(ip?: string): [number, number, number, number] {
-  if (!ip) return [0, 0, 0, 0];
-  const parts = ip.split(".").slice(0, 4);
-  const nums = parts.map((p) => {
-    const n = parseInt(p, 10);
-    return Number.isFinite(n) && n >= 0 ? n : 0;
-  }) as number[];
-  while (nums.length < 4) nums.push(0);
-  return [nums[0], nums[1], nums[2], nums[3]] as [number, number, number, number];
-}
-
-/** เปรียบเทียบ IP สองตัว */
-function compareIp(a?: string, b?: string) {
-  const A = ipToQuads(a);
-  const B = ipToQuads(b);
-  for (let i = 0; i < 4; i++) {
-    if (A[i] < B[i]) return -1;
-    if (A[i] > B[i]) return 1;
-  }
-  return 0;
-}
+type Cell<T> = (row: T) => React.ReactNode;
 
 export default function DataTable({ upsData }: DataTableProps) {
   const { loggedIn } = useAuth();
   const [asc] = useState(true);
 
-  // เรียงตาม IP (สลับทิศทางได้ด้วยปุ่ม)
+  /** แปลง IPv4 เป็นตัวเลข 4 ช่อง */
+  function ipToQuads(ip?: string): [number, number, number, number] {
+    if (!ip) return [0, 0, 0, 0];
+    const parts = ip.split(".").slice(0, 4);
+    const nums = parts.map((p) => {
+      const n = parseInt(p, 10);
+      return Number.isFinite(n) && n >= 0 ? n : 0;
+    }) as number[];
+    while (nums.length < 4) nums.push(0);
+    return [nums[0], nums[1], nums[2], nums[3]] as [number, number, number, number];
+  }
+
+  /** เปรียบเทียบ IP */
+  function compareIp(a?: string, b?: string) {
+    const A = ipToQuads(a);
+    const B = ipToQuads(b);
+    for (let i = 0; i < 4; i++) {
+      if (A[i] < B[i]) return -1;
+      if (A[i] > B[i]) return 1;
+    }
+    return 0;
+  }
+
   const sortedData = useMemo(() => {
     const copied = [...(upsData || [])];
     copied.sort((a, b) => (asc ? compareIp(a.ip, b.ip) : compareIp(b.ip, a.ip)));
     return copied;
   }, [upsData, asc]);
 
-  const headers = loggedIn
-    ? [
-      "ID",
-      "Status",
-      "IP Address",
-      "Brand",
-      "Model",
-      "Location",
-      "Input L1(V)",
-      "Input L2(V)",
-      "Input L3(V)",
-      "Battery (%)",
-      "Battery (VDC)",
-      "Backup Time (MIN)",
-      "Temp (°C)",
+  /** กำหนดคอลัมน์ */
+  const allColumns: { header: string; cell: Cell<UPSData> }[] = [
+    { header: "ID", cell: (u) => u.id },
+    {
+      header: "Status",
+      cell: (u) => (
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-semibold ${
+            u.status === "Online"
+              ? "bg-green-100 text-green-800"
+              : u.status === "Offline"
+              ? "bg-red-100 text-red-800"
+              : "bg-yellow-100 text-yellow-800"
+          }`}
+        >
+          {u.status}
+        </span>
+      ),
+    },
+    { header: "IP Address", cell: (u) => u.ip },
+    { header: "Brand", cell: (u) => u.brand },
+    { header: "Model", cell: (u) => u.model },
+    { header: "Location", cell: (u) => u.location },
+    { header: "Input L1(V)", cell: (u) => u.input?.L1V ?? 0 },
+    { header: "Input L2(V)", cell: (u) => u.input?.L2V ?? 0 },
+    { header: "Input L3(V)", cell: (u) => u.input?.L3V ?? 0 },
+    { header: "Battery (%)", cell: (u) => `${u.batteryPercent ?? 0}%` },
+    {
+      header: "Battery (VDC)",
+      cell: (u) => (u.batteryVDC != null ? (u.batteryVDC / 10).toFixed(1) : 0),
+    },
+    { header: "Backup Time (MIN)", cell: (u) => u.backupTimeMin ?? 0 },
+    { header: "Temp (°C)", cell: (u) => u.temperatureC ?? 0 },
+    {
+      header: "Input L1(A)",
+      cell: (u) => (u.input?.L1A != null && u.input.L1A >= 0 ? u.input.L1A : 0),
+    },
+    { header: "Input Frequency(Hz)", cell: (u) => u.input?.freqHz ?? 0 },
+    { header: "Output L1(V)", cell: (u) => u.output?.L1V ?? 0 },
+    { header: "Output L2(V)", cell: (u) => u.output?.L2V ?? 0 },
+    { header: "Output L3(V)", cell: (u) => u.output?.L3V ?? 0 },
+    { header: "Output L1(A)", cell: (u) => u.output?.L1A ?? 0 },
+    { header: "Output L2(A)", cell: (u) => u.output?.L2A ?? 0 },
+    { header: "Output L3(A)", cell: (u) => u.output?.L3A ?? 0 },
+    { header: "Output Frequency(Hz)", cell: (u) => u.output?.freqHz ?? 0 },
+    { header: "Load (VA)", cell: (u) => u.loadVA ?? 0 },
+    { header: "Load (W)", cell: (u) => u.loadW ?? 0 },
+  ];
 
-      "Input L1(A)",
-      "Input Frequency(Hz)",
-      "Output L1(V)",
-      "Output L2(V)",
-      "Output L3(V)",
-      "Output L1(A)",
-      "Output L2(A)",
-      "Output L3(A)",
-      "Output Frequency(Hz)",
-      "Load (VA)",
-      "Load (W)",
-    ]
-    : ["Brand", "Model", "Location", "Battery (%)", "Input L1(V)"];
+  const guestColumns: { header: string; cell: Cell<UPSData> }[] = [
+    { header: "Brand", cell: (u) => u.brand },
+    { header: "Model", cell: (u) => u.model },
+    { header: "Location", cell: (u) => u.location },
+    { header: "Input L1(V)", cell: (u) => u.input?.L1V ?? 0 },
+    { header: "Battery (%)", cell: (u) => `${u.batteryPercent ?? 0}%` },
+  ];
+
+  const columns = loggedIn ? allColumns : guestColumns;
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6 m-6">
@@ -82,144 +112,30 @@ export default function DataTable({ upsData }: DataTableProps) {
         <table className="min-w-full border-collapse">
           <thead>
             <tr className="bg-gray-50">
-              {headers.map((header) => (
+              {columns.map((col) => (
                 <th
-                  key={header}
+                  key={col.header}
                   className="border border-gray-200 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  {header}
+                  {col.header}
                 </th>
               ))}
             </tr>
           </thead>
-
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedData.map((ups, index) => (
-              <tr key={ups.id ?? `${ups.ip}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                {loggedIn ? (
-                  <>
-                    {/* ✅ จัดคอลัมน์ให้ตรงกับ headers */}
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {ups.id}
-                    </td>
-
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${ups.status === "Online"
-                          ? "bg-green-100 text-green-800"
-                          : ups.status === "Offline"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"
-                          }`}
-                      >
-                        {ups.status}
-                      </span>
-                    </td>
-
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.ip}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.brand}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">
-                      {ups.model}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">
-                      {ups.location}
-                    </td>
-
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.input?.L1V}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.input?.L2V}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.input?.L3V}
-                    </td>
-                    {/* Battery */}
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.batteryPercent}%
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-right">
-                      {ups.batteryVDC != null ? (ups.batteryVDC / 10).toFixed(1) : "-"}
-                    </td>
-
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.backupTimeMin}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.temperatureC}
-                    </td>
-
-                    {/* Input V */}
-
-
-                    {/* Input A */}
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.input?.L1A}
-                    </td>
-                    {/* Input Frequency */}
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.input?.freqHz}
-                    </td>
-
-                    {/* Output V */}
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.output?.L1V}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.output?.L2V}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.output?.L3V}
-                    </td>
-
-                    {/* Output A */}
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.output?.L1A}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.output?.L2A}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.output?.L3A}
-                    </td>
-
-                    {/* Output Frequency */}
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.output?.freqHz}
-                    </td>
-
-                    {/* Load */}
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.loadVA}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.loadW}
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    {/* 🔒 โหมดไม่ล็อกอิน: โชว์เฉพาะ 5 คอลัมน์ */}
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.brand}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">
-                      {ups.model}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900 max-w-xs truncate">
-                      {ups.location}
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.batteryPercent}%
-                    </td>
-                    <td className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                      {ups.input?.L1V}
-                    </td>
-                  </>
-                )}
+              <tr
+                key={ups.id ?? `${ups.ip}-${index}`}
+                className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+              >
+                {columns.map((col) => (
+                  <td
+                    key={col.header}
+                    className="border border-gray-200 px-4 py-3 whitespace-nowrap text-sm text-gray-900"
+                  >
+                    {col.cell(ups)}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
