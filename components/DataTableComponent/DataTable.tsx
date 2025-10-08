@@ -44,23 +44,39 @@ export default function DataTable({ upsData }: DataTableProps) {
   }, [upsData, asc]);
 
   /** กำหนดคอลัมน์ */
-  const allColumns: { header: string; cell: Cell<UPSData> }[] = [
+  const allColumns: { header: string; cell: (u: UPSData) => React.ReactNode }[] = [
     { header: "ID", cell: (u) => u.id },
     {
       header: "Status",
-      cell: (u) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold ${
-            u.status === "Online"
-              ? "bg-green-100 text-green-800"
-              : u.status === "Offline"
+      cell: (u) => {
+        // ✅ แปลงสถานะเป็นข้อความภาษาไทย
+        const statusText =
+          u.status === "Online"
+            ? "ออนไลน์"
+            : u.status === "Offline"
+              ? "ออฟไลน์"
+              : u.status === "Powerfail"
+                ? "ไฟตก"
+                : u.status ?? "-";
+
+        // ✅ กำหนดสีตามสถานะ
+        const statusColor =
+          u.status === "Online"
+            ? "bg-green-100 text-green-800"
+            : u.status === "Offline"
               ? "bg-red-100 text-red-800"
-              : "bg-yellow-100 text-yellow-800"
-          }`}
-        >
-          {u.status}
-        </span>
-      ),
+              : u.status === "Powerfail"
+                ? "bg-yellow-100 text-yellow-800"
+                : "bg-gray-100 text-gray-700";
+
+        return (
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-semibold ${statusColor}`}
+          >
+            {statusText}
+          </span>
+        );
+      },
     },
     { header: "IP Address", cell: (u) => u.ip },
     { header: "Brand", cell: (u) => u.brand },
@@ -91,6 +107,8 @@ export default function DataTable({ upsData }: DataTableProps) {
     { header: "Load (VA)", cell: (u) => u.loadVA ?? 0 },
     { header: "Load (W)", cell: (u) => u.loadW ?? 0 },
   ];
+
+
 
   const guestColumns: { header: string; cell: Cell<UPSData> }[] = [
     { header: "Brand", cell: (u) => u.brand },

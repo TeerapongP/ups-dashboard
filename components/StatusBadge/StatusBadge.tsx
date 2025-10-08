@@ -15,7 +15,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
       bg: 'bg-yellow-100',
       text: 'text-yellow-800',
       dot: 'bg-yellow-500',
-      label: 'powerFail',
+      label: 'ไฟตก',
     },
     offline: {
       bg: 'bg-red-100',

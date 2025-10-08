@@ -42,7 +42,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ devices }) => 
             dotColor="bg-green-500"
           />
           <StatsCard
-            label="Power Fail"
+            label="ไฟตก"
             value={powerFailCount}
             color="yellow"
             dotColor="bg-yellow-500"

@@ -10,7 +10,7 @@ interface StatusDonutChartProps {
 export default function StatusDonutChart({ upsData }: StatusDonutChartProps) {
   const onlineCount = upsData.filter((u) => u.status === 'Online').length;
   const offlineCount = upsData.filter((u) => u.status === 'Offline').length;
-  const powerfailCount = upsData.filter((u) => u.status === 'PowerFail').length;
+  const powerfailCount = upsData.filter((u) => u.status === 'Powerfail').length;
 
   const total = upsData.length || 1; // กันหาร 0
 
@@ -18,7 +18,7 @@ export default function StatusDonutChart({ upsData }: StatusDonutChartProps) {
   const data = [
     { name: 'Online', value: onlineCount },
     { name: 'Offline', value: offlineCount },
-    { name: 'Powerfail', value: powerfailCount },
+    { name: 'ไฟตก', value: powerfailCount },
   ];
 
   const COLORS = ['#22c55e', '#ef4444', '#f59e0b']; // เขียว / แดง / เหลือง
@@ -73,7 +73,7 @@ export default function StatusDonutChart({ upsData }: StatusDonutChartProps) {
         <div className="flex items-center">
           <div className="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
           <span className="text-sm text-gray-600">
-            Powerfail ({((powerfailCount / total) * 100).toFixed(0)}%)
+            ไฟตก ({((powerfailCount / total) * 100).toFixed(0)}%)
           </span>
         </div>
       </div>

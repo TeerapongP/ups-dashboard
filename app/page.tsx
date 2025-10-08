@@ -83,71 +83,130 @@ export default function UPSDashboard() {
   useEffect(() => {
     if (!upsData?.length) return;
 
-    const prevMap = prevStatusMapRef.current;
-    const isFirstTick = Object.keys(prevMap).length === 0; // ยังไม่เคยมีสถานะเก่า
+    // --- helper ---
+    const norm = (s: unknown) =>
+      String(s ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_\-]+/g, ""); // ตัดช่องว่าง/ขีด/ขีดล่าง
 
+    const normalizeStatus = (s: unknown): "Online" | "Offline" | "PowerFail" | "" => {
+      const k = norm(s);
+      if (k === "online") return "Online";
+      if (k === "offline") return "Offline";
+      // รองรับ power-fail หลายรูปแบบ
+      if (k === "powerfail" || k === "powerfailure" || k === "acfail" || (k.includes("power") && k.includes("fail")))
+        return "PowerFail";
+      return "";
+    };
+
+    const formatNames = (ids: string[]) => `${ids.slice(0, 3).join(", ")}${ids.length > 3 ? "…" : ""}`;
+
+    // --- สถานะก่อนหน้า / รอบแรก ---
+    const prevMap = prevStatusMapRef.current as Record<string, string | undefined>;
+    const isFirstTick = Object.keys(prevMap).length === 0;
+
+    // --- เก็บ map ใหม่ ---
     const newMap: Record<string, string> = {};
 
-    const outages: string[] = [];    // Online -> Offline
-    const recovered: string[] = [];  // Offline -> Online
-    const powerFails: string[] = []; // any -> PowerFail (เฉพาะเมื่อเพิ่งเปลี่ยน)
+    // --- ชุดข้อมูล event/ภาพรวม ---
+    const outages: string[] = [];      // Online -> Offline
+    const recovered: string[] = [];    // Offline -> Online
+    const powerFails: string[] = [];   // any -> PowerFail (เพิ่งเปลี่ยน)
 
-    const currentOffline: string[] = [];   // สรุปภาพรวมปัจจุบัน (ใช้รอบแรก)
-    const currentPowerFail: string[] = [];
+    const currentOffline: string[] = [];     // สรุปรอบแรก
+    const currentPowerFail: string[] = [];   // สรุปรอบแรก
 
     for (const u of upsData) {
       const prev = normalizeStatus(prevMap[u.id]);
       const curr = normalizeStatus(u.status);
       newMap[u.id] = curr;
 
-      // เก็บภาพรวมปัจจุบัน
-      if (curr === 'Offline') currentOffline.push(u.id);
-      if (curr === 'PowerFail') currentPowerFail.push(u.id);
+      // ภาพรวมรอบแรก
+      if (curr === "Offline") currentOffline.push(u.id);
+      if (curr === "PowerFail") currentPowerFail.push(u.id);
 
-      // หากยังไม่มีสถานะก่อนหน้า ให้ข้าม transition (จะสรุปรอบแรกด้านล่าง)
+      // ข้าม transition ถ้ายังไม่มี prev (จะสรุปรอบแรกแทน)
       if (!prev) continue;
 
-      if (prev === 'Online' && curr === 'Offline') outages.push(u.id);
-      else if (prev === 'Offline' && curr === 'Online') recovered.push(u.id);
-      else if (curr === 'PowerFail' && prev !== 'PowerFail') powerFails.push(u.id);
+      if (prev === "Online" && curr === "Offline") outages.push(u.id);
+      else if (prev === "Offline" && curr === "Online") recovered.push(u.id);
+      else if (curr === "PowerFail" && prev !== "PowerFail") powerFails.push(u.id);
     }
 
-    const formatNames = (ids: string[]) => `${ids.slice(0, 3).join(', ')}${ids.length > 3 ? '…' : ''}`;
+    // --- สร้างคิวตาม priority ---
+    type ToastItem = { type: "error" | "warning" | "success"; msg: string };
+    const queue: ToastItem[] = [];
+
+    if (isFirstTick) {
+      if (currentOffline.length > 0) {
+        queue.push({
+          type: "error",
+          msg: `ยัง Offline อยู่ ${currentOffline.length} จุด: ${formatNames(currentOffline)}`,
+        });
+      }
+      if (currentPowerFail.length > 0) {
+        queue.push({
+          type: "warning",
+          msg: `ไฟตก ${currentPowerFail.length} จุด: ${formatNames(currentPowerFail)}`,
+        });
+      }
+    } else {
+      if (outages.length > 0) {
+        queue.push({
+          type: "error",
+          msg: `ติดต่อ UPS ไม่ได้ ${outages.length} จุด: ${formatNames(outages)}`,
+        });
+      }
+      if (powerFails.length > 0) {
+        queue.push({
+          type: "warning",
+          msg: `ไฟตก ${powerFails.length} จุด: ${formatNames(powerFails)}`,
+        });
+      }
+      if (recovered.length > 0) {
+        queue.push({
+          type: "success",
+          msg: `ไฟกลับมาแล้ว ${recovered.length} จุด: ${formatNames(recovered)}`,
+        });
+      }
+    }
 
     const now = Date.now();
     const canToast = now - lastToastAtRef.current >= TOAST_COOLDOWN_MS;
 
-    // Queue ตามความสำคัญ: error > warning > success
-    const queue: Array<{ type: 'error' | 'warning' | 'success'; msg: string; cond: boolean }> = [];
-
-    if (isFirstTick) {
-      // รอบแรก: ยังไม่มี prev → แสดงภาพรวมสถานะที่มีอยู่ตอนนี้เลย
-      queue.push(
-        { type: 'error', msg: `ยัง Offline อยู่ ${currentOffline.length} จุด: ${formatNames(currentOffline)}`, cond: currentOffline.length > 0 },
-        { type: 'warning', msg: `ไฟตก/ไฟต่ำ ${currentPowerFail.length} จุด: ${formatNames(currentPowerFail)}`, cond: currentPowerFail.length > 0 },
-      );
-    } else {
-      // รอบถัดไป: แสดงเฉพาะเมื่อมีการเปลี่ยนสถานะจริง
-      queue.push(
-        { type: 'error', msg: `ติดต่อ UPS ไม่ได้ ${outages.length} จุด: ${formatNames(outages)}`, cond: outages.length > 0 },
-        { type: 'warning', msg: `ไฟตก ${powerFails.length} จุด: ${formatNames(powerFails)}`, cond: powerFails.length > 0 },
-        { type: 'success', msg: `ไฟกลับมาแล้ว ${recovered.length} จุด: ${formatNames(recovered)}`, cond: recovered.length > 0 },
-      );
+    // ถ้าไม่มีอะไรจะแจ้ง ก็อัปเดต prev แล้วจบ
+    if (queue.length === 0) {
+      prevStatusMapRef.current = newMap;
+      return;
     }
+
+    // แสดงหลายอัน "ทยอย" ตาม cooldown
+    const showToast = (item: ToastItem) => {
+      setToastType(item.type);
+      setToastMessage(item.msg);
+      setShowToast(true);
+      lastToastAtRef.current = Date.now();
+    };
 
     if (canToast) {
-      const item = queue.find(q => q.cond);
-      if (item) {
-        setToastType(item.type);
-        setToastMessage(item.msg);
-        setShowToast(true);
-        lastToastAtRef.current = now;
+      // โชว์อันแรกทันที
+      showToast(queue[0]);
+
+      // ถ้ามีมากกว่า 1 รายการ ให้ทยอยโชว์ตาม TOAST_COOLDOWN_MS
+      if (queue.length > 1) {
+        // สร้างห่วงโซ่ setTimeout แบบต่อคิว
+        let delay = TOAST_COOLDOWN_MS;
+        for (let i = 1; i < queue.length; i++) {
+          setTimeout(() => showToast(queue[i]), delay);
+          delay += TOAST_COOLDOWN_MS;
+        }
       }
     }
-
-    // อัปเดตสถานะรอบก่อน
+    // อัปเดต prev เสมอ
     prevStatusMapRef.current = newMap;
   }, [upsData]);
+
 
   const handleFilter = useCallback((filtered: UPSData[], groupByValue: string) => {
     setFilteredData(filtered);
@@ -206,7 +265,7 @@ export default function UPSDashboard() {
               <span>•</span>
               <span>Offline: {offlineCount}</span>
               <span>•</span>
-              <span>PowerFail: {powerFailCount}</span>
+              <span>ไฟตก: {powerFailCount}</span>
             </div>
           </div>
         </div>

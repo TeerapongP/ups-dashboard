@@ -89,7 +89,7 @@ export default function SearchFilter({ upsData, onFilter }: SearchFilterProps) {
             <option value="all">All Status</option>
             <option value="online">Online Only</option>
             <option value="offline">Offline Only</option>
-            <option value="powerfail">Powerfail Only</option>
+            <option value="powerfail">ไฟตกเท่านั้น</option>
 
           </select>
         </div>
