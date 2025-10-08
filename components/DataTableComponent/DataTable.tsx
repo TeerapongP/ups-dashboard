@@ -49,23 +49,26 @@ export default function DataTable({ upsData }: DataTableProps) {
     {
       header: "Status",
       cell: (u) => {
-        // ✅ แปลงสถานะเป็นข้อความภาษาไทย
-        const statusText =
-          u.status === "Online"
-            ? "ออนไลน์"
-            : u.status === "Offline"
-              ? "ออฟไลน์"
-              : u.status === "Powerfail"
-                ? "ไฟตก"
-                : u.status ?? "-";
+        // ✅ ปรับให้รองรับ power_outage จาก BE ด้วย
+        const normalizedStatus = (u.status ?? "").toLowerCase();
 
-        // ✅ กำหนดสีตามสถานะ
+        const statusText =
+          normalizedStatus === "online"
+            ? "ออนไลน์"
+            : normalizedStatus === "offline"
+              ? "ออฟไลน์"
+              : normalizedStatus === "powerfail"
+                ? "ไฟตก"
+                : normalizedStatus === "power_outage"
+                  ? "ไฟดับ"
+                  : u.status ?? "-";
+
         const statusColor =
-          u.status === "Online"
+          normalizedStatus === "online"
             ? "bg-green-100 text-green-800"
-            : u.status === "Offline"
+            : normalizedStatus === "offline"
               ? "bg-red-100 text-red-800"
-              : u.status === "Powerfail"
+              : normalizedStatus === "powerfail" || normalizedStatus === "power_outage"
                 ? "bg-yellow-100 text-yellow-800"
                 : "bg-gray-100 text-gray-700";
 
@@ -107,9 +110,7 @@ export default function DataTable({ upsData }: DataTableProps) {
     { header: "Load (VA)", cell: (u) => u.loadVA ?? 0 },
     { header: "Load (W)", cell: (u) => u.loadW ?? 0 },
   ];
-
-
-
+  
   const guestColumns: { header: string; cell: Cell<UPSData> }[] = [
     { header: "Brand", cell: (u) => u.brand },
     { header: "Model", cell: (u) => u.model },

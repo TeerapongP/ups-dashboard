@@ -21,6 +21,7 @@ function normalizeStatus(s?: string): string {
   if (v === 'online') return 'Online';
   if (v === 'offline') return 'Offline';
   if (v === 'powerfail' || v === 'power_fail' || v === 'power-fail') return 'PowerFail';
+  if (v === 'power_outage' || v === 'poweroutage' || v === 'power-outage') return 'power_outage';
   return '';
 }
 
@@ -90,13 +91,16 @@ export default function UPSDashboard() {
         .toLowerCase()
         .replace(/[\s_\-]+/g, ""); // ตัดช่องว่าง/ขีด/ขีดล่าง
 
-    const normalizeStatus = (s: unknown): "Online" | "Offline" | "PowerFail" | "" => {
+    const normalizeStatus = (s: unknown): "Online" | "Offline" | "PowerFail" | "PowerOutage" | "" => {
       const k = norm(s);
       if (k === "online") return "Online";
       if (k === "offline") return "Offline";
       // รองรับ power-fail หลายรูปแบบ
       if (k === "powerfail" || k === "powerfailure" || k === "acfail" || (k.includes("power") && k.includes("fail")))
         return "PowerFail";
+      // รองรับ power-outage หลายรูปแบบ
+      if (k === "poweroutage" || k === "powerout" || (k.includes("power") && k.includes("outage")))
+        return "PowerOutage";
       return "";
     };
 
@@ -113,9 +117,11 @@ export default function UPSDashboard() {
     const outages: string[] = [];      // Online -> Offline
     const recovered: string[] = [];    // Offline -> Online
     const powerFails: string[] = [];   // any -> PowerFail (เพิ่งเปลี่ยน)
+    const powerOutages: string[] = []; // any -> power_outage (เพิ่งเปลี่ยน)
 
     const currentOffline: string[] = [];     // สรุปรอบแรก
     const currentPowerFail: string[] = [];   // สรุปรอบแรก
+    const currentPowerOutage: string[] = []; // สรุปรอบแรก
 
     for (const u of upsData) {
       const prev = normalizeStatus(prevMap[u.id]);
@@ -125,6 +131,7 @@ export default function UPSDashboard() {
       // ภาพรวมรอบแรก
       if (curr === "Offline") currentOffline.push(u.id);
       if (curr === "PowerFail") currentPowerFail.push(u.id);
+      if (curr === "PowerOutage") currentPowerOutage.push(u.id);
 
       // ข้าม transition ถ้ายังไม่มี prev (จะสรุปรอบแรกแทน)
       if (!prev) continue;
@@ -132,6 +139,7 @@ export default function UPSDashboard() {
       if (prev === "Online" && curr === "Offline") outages.push(u.id);
       else if (prev === "Offline" && curr === "Online") recovered.push(u.id);
       else if (curr === "PowerFail" && prev !== "PowerFail") powerFails.push(u.id);
+      else if (curr === "PowerOutage" && prev !== "PowerOutage") powerOutages.push(u.id);
     }
 
     // --- สร้างคิวตาม priority ---
@@ -151,6 +159,12 @@ export default function UPSDashboard() {
           msg: `ไฟตก ${currentPowerFail.length} จุด: ${formatNames(currentPowerFail)}`,
         });
       }
+      if (currentPowerOutage.length > 0) {
+        queue.push({
+          type: "error",
+          msg: `ไฟดับ ${currentPowerOutage.length} จุด: ${formatNames(currentPowerOutage)}`,
+        });
+      }
     } else {
       if (outages.length > 0) {
         queue.push({
@@ -162,6 +176,12 @@ export default function UPSDashboard() {
         queue.push({
           type: "warning",
           msg: `ไฟตก ${powerFails.length} จุด: ${formatNames(powerFails)}`,
+        });
+      }
+      if (powerOutages.length > 0) {
+        queue.push({
+          type: "error",
+          msg: `ไฟดับ ${powerOutages.length} จุด: ${formatNames(powerOutages)}`,
         });
       }
       if (recovered.length > 0) {
@@ -221,6 +241,7 @@ export default function UPSDashboard() {
   const onlineCount = upsData.filter(u => normalizeStatus(u.status) === 'Online').length;
   const offlineCount = upsData.filter(u => normalizeStatus(u.status) === 'Offline').length;
   const powerFailCount = upsData.filter(u => normalizeStatus(u.status) === 'PowerFail').length;
+  const powerOutageCount = upsData.filter(u => normalizeStatus(u.status) === 'power_outage').length;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -266,6 +287,8 @@ export default function UPSDashboard() {
               <span>Offline: {offlineCount}</span>
               <span>•</span>
               <span>ไฟตก: {powerFailCount}</span>
+              <span>•</span>
+              <span>ไฟดับ: {powerOutageCount}</span>
             </div>
           </div>
         </div>

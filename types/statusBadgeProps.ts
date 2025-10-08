@@ -1,3 +1,3 @@
 export interface StatusBadgeProps {
-  status: 'online' | 'powerFail' | 'offline';
+  status: 'online' | 'powerFail' | 'offline' | 'power_outage';
 }
