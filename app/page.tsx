@@ -21,7 +21,7 @@ function normalizeStatus(s?: string): string {
   if (v === 'online') return 'Online';
   if (v === 'offline') return 'Offline';
   if (v === 'powerfail' || v === 'power_fail' || v === 'power-fail') return 'PowerFail';
-  if (v === 'power_outage' || v === 'poweroutage' || v === 'power-outage') return 'power_outage';
+  if (v === 'powercut' || v === 'power_cut' || v === 'power-cut') return 'powerCut';
   return '';
 }
 
@@ -35,21 +35,23 @@ export default function UPSDashboard() {
 
   const { loggedIn } = useAuth();
 
-  const requestUrl = useMemo(() => {
-    const rawBase = process.env.NEXT_PUBLIC_API_URL ?? "";
+  // const requestUrl = useMemo(() => {
+  //   const rawBase = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-    // ตัด/เติมให้เหลือ api base แค่รอบเดียว
-    const trimmed = rawBase.replace(/\/+$/, ""); // ตัด trailing slash
-    const apiBase = trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+  //   // ตัด/เติมให้เหลือ api base แค่รอบเดียว
+  //   const trimmed = rawBase.replace(/\/+$/, ""); // ตัด trailing slash
+  //   const apiBase = trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
 
-    const qs = "timeout=1&retries=0&workers=12&ttl=2&persist=true";
-    const endpoint = "ups-getall";
+  //   const qs = "timeout=1&retries=0&workers=12&ttl=2&persist=true";
+  //   const endpoint = "ups-getall";
 
-    // ถ้าไม่ตั้ง NEXT_PUBLIC_API_URL ให้ fallback ไปใช้ Next API route
-    if (!rawBase) return `/api/${endpoint}?${qs}`;
+  //   // ถ้าไม่ตั้ง NEXT_PUBLIC_API_URL ให้ fallback ไปใช้ Next API route
+  //   if (!rawBase) return `/api/${endpoint}?${qs}`;
 
-    return `${apiBase}/${endpoint}?${qs}`;
-  }, []);
+  //   return `${apiBase}/${endpoint}?${qs}`;
+  // }, []);
+
+  const requestUrl = useMemo(() => "/api/ups", []);
 
 
   const { upsData, loading, error } = useUpsPolling(requestUrl, 30000);
@@ -91,16 +93,16 @@ export default function UPSDashboard() {
         .toLowerCase()
         .replace(/[\s_\-]+/g, ""); // ตัดช่องว่าง/ขีด/ขีดล่าง
 
-    const normalizeStatus = (s: unknown): "Online" | "Offline" | "PowerFail" | "PowerOutage" | "" => {
+    const normalizeStatus = (s: unknown): "Online" | "Offline" | "PowerFail" | "powerCut" | "" => {
       const k = norm(s);
       if (k === "online") return "Online";
       if (k === "offline") return "Offline";
       // รองรับ power-fail หลายรูปแบบ
       if (k === "powerfail" || k === "powerfailure" || k === "acfail" || (k.includes("power") && k.includes("fail")))
         return "PowerFail";
-      // รองรับ power-outage หลายรูปแบบ
-      if (k === "poweroutage" || k === "powerout" || (k.includes("power") && k.includes("outage")))
-        return "PowerOutage";
+      // รองรับ power-cut หลายรูปแบบ
+      if (k === "powercut" || k === "poweroutage" || (k.includes("power") && (k.includes("cut") || k.includes("outage"))))
+        return "powerCut";
       return "";
     };
 
@@ -117,11 +119,11 @@ export default function UPSDashboard() {
     const outages: string[] = [];      // Online -> Offline
     const recovered: string[] = [];    // Offline -> Online
     const powerFails: string[] = [];   // any -> PowerFail (เพิ่งเปลี่ยน)
-    const powerOutages: string[] = []; // any -> power_outage (เพิ่งเปลี่ยน)
+    const powerCuts: string[] = []; // any -> powerCut (เพิ่งเปลี่ยน)
 
     const currentOffline: string[] = [];     // สรุปรอบแรก
     const currentPowerFail: string[] = [];   // สรุปรอบแรก
-    const currentPowerOutage: string[] = []; // สรุปรอบแรก
+    const currentPowerCut: string[] = []; // สรุปรอบแรก
 
     for (const u of upsData) {
       const prev = normalizeStatus(prevMap[u.id]);
@@ -131,7 +133,7 @@ export default function UPSDashboard() {
       // ภาพรวมรอบแรก
       if (curr === "Offline") currentOffline.push(u.id);
       if (curr === "PowerFail") currentPowerFail.push(u.id);
-      if (curr === "PowerOutage") currentPowerOutage.push(u.id);
+      if (curr === "powerCut") currentPowerCut.push(u.id);
 
       // ข้าม transition ถ้ายังไม่มี prev (จะสรุปรอบแรกแทน)
       if (!prev) continue;
@@ -139,7 +141,7 @@ export default function UPSDashboard() {
       if (prev === "Online" && curr === "Offline") outages.push(u.id);
       else if (prev === "Offline" && curr === "Online") recovered.push(u.id);
       else if (curr === "PowerFail" && prev !== "PowerFail") powerFails.push(u.id);
-      else if (curr === "PowerOutage" && prev !== "PowerOutage") powerOutages.push(u.id);
+      else if (curr === "powerCut" && prev !== "powerCut") powerCuts.push(u.id);
     }
 
     // --- สร้างคิวตาม priority ---
@@ -159,10 +161,10 @@ export default function UPSDashboard() {
           msg: `ไฟตก ${currentPowerFail.length} จุด: ${formatNames(currentPowerFail)}`,
         });
       }
-      if (currentPowerOutage.length > 0) {
+      if (currentPowerCut.length > 0) {
         queue.push({
-          type: "error",
-          msg: `ไฟดับ ${currentPowerOutage.length} จุด: ${formatNames(currentPowerOutage)}`,
+          type: "warning",
+          msg: `ไฟดับ ${currentPowerCut.length} จุด: ${formatNames(currentPowerCut)}`,
         });
       }
     } else {
@@ -178,10 +180,10 @@ export default function UPSDashboard() {
           msg: `ไฟตก ${powerFails.length} จุด: ${formatNames(powerFails)}`,
         });
       }
-      if (powerOutages.length > 0) {
+      if (powerCuts.length > 0) {
         queue.push({
-          type: "error",
-          msg: `ไฟดับ ${powerOutages.length} จุด: ${formatNames(powerOutages)}`,
+          type: "warning",
+          msg: `ไฟดับ ${powerCuts.length} จุด: ${formatNames(powerCuts)}`,
         });
       }
       if (recovered.length > 0) {
@@ -241,7 +243,7 @@ export default function UPSDashboard() {
   const onlineCount = upsData.filter(u => normalizeStatus(u.status) === 'Online').length;
   const offlineCount = upsData.filter(u => normalizeStatus(u.status) === 'Offline').length;
   const powerFailCount = upsData.filter(u => normalizeStatus(u.status) === 'PowerFail').length;
-  const powerOutageCount = upsData.filter(u => normalizeStatus(u.status) === 'power_outage').length;
+  const powerCutCount = upsData.filter(u => normalizeStatus(u.status) === 'powerCut').length;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -288,7 +290,7 @@ export default function UPSDashboard() {
               <span>•</span>
               <span>ไฟตก: {powerFailCount}</span>
               <span>•</span>
-              <span>ไฟดับ: {powerOutageCount}</span>
+              <span>ไฟดับ: {powerCutCount}</span>
             </div>
           </div>
         </div>
