@@ -49,7 +49,7 @@ export default function DataTable({ upsData }: DataTableProps) {
     {
       header: "Status",
       cell: (u) => {
-        // ✅ ปรับให้รองรับ power_outage จาก BE ด้วย
+        //  ปรับให้รองรับ power_outage จาก BE ด้วย
         const normalizedStatus = (u.status ?? "").toLowerCase();
 
         const statusText =
@@ -59,7 +59,7 @@ export default function DataTable({ upsData }: DataTableProps) {
               ? "ออฟไลน์"
               : normalizedStatus === "powerfail"
                 ? "ไฟตก"
-                : normalizedStatus === "power_outage"
+                : normalizedStatus === "powercut"
                   ? "ไฟดับ"
                   : u.status ?? "-";
 
@@ -70,7 +70,9 @@ export default function DataTable({ upsData }: DataTableProps) {
               ? "bg-red-100 text-red-800"
               : normalizedStatus === "powerfail" || normalizedStatus === "power_outage"
                 ? "bg-yellow-100 text-yellow-800"
-                : "bg-gray-100 text-gray-700";
+                : normalizedStatus === "powercut"
+                  ? "bg-red-100 text-red-800"
+                  : "bg-gray-100 text-gray-700";
 
         return (
           <span
@@ -110,7 +112,7 @@ export default function DataTable({ upsData }: DataTableProps) {
     { header: "Load (VA)", cell: (u) => u.loadVA ?? 0 },
     { header: "Load (W)", cell: (u) => u.loadW ?? 0 },
   ];
-  
+
   const guestColumns: { header: string; cell: Cell<UPSData> }[] = [
     { header: "Brand", cell: (u) => u.brand },
     { header: "Model", cell: (u) => u.model },
