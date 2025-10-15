@@ -127,14 +127,14 @@ export default function DataTable({ upsData }: DataTableProps) {
         <h3 className="text-lg font-bold text-gray-800">Detailed UPS Data</h3>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-120 overflow-y-auto">
         <table className="min-w-full border-collapse">
-          <thead>
+          <thead className="sticky top-0 z-10">
             <tr className="bg-gray-50">
               {columns.map((col) => (
                 <th
                   key={col.header}
-                  className="border border-gray-200 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="border border-gray-200 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50"
                 >
                   {col.header}
                 </th>
