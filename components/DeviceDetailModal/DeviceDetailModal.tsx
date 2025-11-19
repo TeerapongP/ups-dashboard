@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Server } from 'lucide-react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
-import { DeviceDetailModalProps } from '@/types/deviceDetailModal';
+import { DeviceDetailModalProps } from '@/types/DeviceDetailModal';
 
 export const DeviceDetailModal: React.FC<DeviceDetailModalProps> = ({
   device,
