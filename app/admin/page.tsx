@@ -25,11 +25,7 @@ const AdminDashboard: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'insert' | 'edit'>('insert');
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
-  const rawBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-  const trimmed = rawBase.replace(/\/+$/, '');
-  const apiBase = trimmed
-    ? (trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`)
-    : 'http://158.108.196.162:3000/api';
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://158.108.196.162:8000/api';
 
   const requestUrl = useMemo(() => {
     const endpoint = 'snmp/devices';
